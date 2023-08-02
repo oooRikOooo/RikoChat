@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "507401447561",
+    "project_id": "rikochat-e6ccd",
+    "storage_bucket": "rikochat-e6ccd.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:507401447561:android:404695833aa1e106db7e58",
+        "android_client_info": {
+          "package_name": "com.example.rikochat"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "507401447561-46jo003lnrutaensu4mm04pjstf9qgb4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.rikochat",
+            "certificate_hash": "42a36e8012fbebd8113e95c017f07b6d865f5025"
+          }
+        },
+        {
+          "client_id": "507401447561-96v17vts5j30f9po4o288qg82mnm4rrv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAxTIhb-NQpmajEcCkp1TpAswfWoyiQLts"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "507401447561-96v17vts5j30f9po4o288qg82mnm4rrv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

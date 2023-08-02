@@ -1,29 +1,69 @@
 package com.example.rikochat.di
 
+import com.chuckerteam.chucker.api.ChuckerCollector
+import com.chuckerteam.chucker.api.ChuckerInterceptor
+import com.example.rikochat.data.remote.api.auth.AuthServiceImpl
 import com.example.rikochat.data.remote.api.chatSocket.ChatSocketServiceImpl
 import com.example.rikochat.data.remote.api.message.MessageServiceImpl
+import com.example.rikochat.data.remote.api.user.UserServiceImpl
+import com.example.rikochat.domain.api.auth.AuthService
 import com.example.rikochat.domain.api.chatSocket.ChatSocketService
 import com.example.rikochat.domain.api.message.MessageService
+import com.example.rikochat.domain.api.user.UserService
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
-import io.ktor.client.features.json.JsonFeature
-import io.ktor.client.features.json.serializer.KotlinxSerializer
-import io.ktor.client.features.logging.Logging
-import io.ktor.client.features.websocket.WebSockets
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.logging.DEFAULT
+import io.ktor.client.plugins.logging.LogLevel
+import io.ktor.client.plugins.logging.Logger
+import io.ktor.client.plugins.logging.Logging
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.serialization.kotlinx.json.json
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 val networkModule = module {
-    single<HttpClient> {
-        HttpClient(CIO) {
-            install(Logging)
-            install(WebSockets)
-            install(JsonFeature) {
-                serializer = KotlinxSerializer()
+    single<HttpClient>(named("RestHttpClient")) {
+        HttpClient(OkHttp) {
+            engine {
+                addInterceptor(get<ChuckerInterceptor>())
+            }
+            install(Logging) {
+                logger = Logger.DEFAULT
+                level = LogLevel.BODY
+            }
+            install(ContentNegotiation) {
+                json()
             }
         }
     }
 
-    single<MessageService> { MessageServiceImpl(get(), get()) }
+    single<HttpClient>(named("WebSocketsHttpClient")) {
+        HttpClient(CIO) {
+            install(Logging) {
+                logger = Logger.DEFAULT
+                level = LogLevel.BODY
+            }
+            install(WebSockets)
+        }
+    }
 
-    single<ChatSocketService> { ChatSocketServiceImpl(get(), get()) }
+    single<ChuckerInterceptor> {
+        ChuckerInterceptor.Builder(androidContext())
+            .collector(ChuckerCollector(androidContext()))
+            .maxContentLength(250000L)
+            .redactHeaders(emptySet())
+            .alwaysReadResponseBody(false)
+            .build()
+    }
+
+    single<MessageService> { MessageServiceImpl(get(named("RestHttpClient")), get()) }
+
+    single<ChatSocketService> { ChatSocketServiceImpl(get(named("WebSocketsHttpClient")), get()) }
+
+    single<AuthService> { AuthServiceImpl(get(named("RestHttpClient")), get()) }
+
+    single<UserService> { UserServiceImpl(get(named("RestHttpClient")), get()) }
 }

@@ -2,7 +2,8 @@ plugins {
     id 'com.android.application'
     id 'org.jetbrains.kotlin.android'
     id 'kotlin-kapt'
-    id 'org.jetbrains.kotlin.plugin.serialization'
+    id 'kotlinx-serialization'
+    id 'com.google.gms.google-services'
 }
 
 android {
@@ -23,8 +24,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            minifyEnabled false
+            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.250:8080\""
+            debuggable true
+        }
         release {
             minifyEnabled false
+            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.250:8080\""
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
@@ -37,6 +44,7 @@ android {
     }
     buildFeatures {
         compose true
+        buildConfig true
     }
     composeOptions {
         kotlinCompilerExtensionVersion '1.4.4'
@@ -51,7 +59,7 @@ android {
 
 ext {
     compose_version = '1.4.0'
-    ktor_version = '1.6.3'
+    ktor_version = '2.3.2'
 }
 
 configurations {
@@ -61,7 +69,19 @@ configurations {
 
 dependencies {
 
-    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1'
+    // Chucker
+    debugImplementation("com.github.chuckerteam.chucker:library:3.5.2")
+    releaseImplementation("com.github.chuckerteam.chucker:library-no-op:3.5.2")
+
+    // Material Icons Extended
+    implementation "androidx.compose.material:material-icons-extended:$compose_version"
+
+    // Firebase
+    implementation platform('com.google.firebase:firebase-bom:32.2.0')
+    implementation 'com.google.firebase:firebase-analytics-ktx'
+    implementation("com.google.firebase:firebase-auth-ktx")
+
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0'
 
     // Koin
     implementation("io.insert-koin:koin-androidx-compose:3.3.0")
@@ -69,10 +89,12 @@ dependencies {
     // Ktor
     implementation "io.ktor:ktor-client-core:$ktor_version"
     implementation "io.ktor:ktor-client-cio:$ktor_version"
-    implementation "io.ktor:ktor-client-serialization:$ktor_version"
+    implementation "io.ktor:ktor-serialization-kotlinx-json:$ktor_version"
     implementation "io.ktor:ktor-client-websockets:$ktor_version"
     implementation "io.ktor:ktor-client-logging:$ktor_version"
-    implementation "ch.qos.logback:logback-classic:1.2.6"
+    implementation "io.ktor:ktor-client-content-negotiation:$ktor_version"
+    implementation "ch.qos.logback:logback-classic:1.2.11"
+    implementation "io.ktor:ktor-client-okhttp:2.2.3"
 
     implementation "androidx.core:core-ktx:1.10.1"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.6.1"

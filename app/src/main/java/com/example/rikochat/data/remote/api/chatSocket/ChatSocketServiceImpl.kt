@@ -6,12 +6,12 @@ import com.example.rikochat.domain.api.chatSocket.ChatSocketService
 import com.example.rikochat.domain.model.message.Message
 import com.example.rikochat.utils.DataState
 import io.ktor.client.HttpClient
-import io.ktor.client.features.websocket.webSocketSession
+import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.url
-import io.ktor.http.cio.websocket.Frame
-import io.ktor.http.cio.websocket.WebSocketSession
-import io.ktor.http.cio.websocket.close
-import io.ktor.http.cio.websocket.readText
+import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
+import io.ktor.websocket.readText
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.isActive
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 class ChatSocketServiceImpl(

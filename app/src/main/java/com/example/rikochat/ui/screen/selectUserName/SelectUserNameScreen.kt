@@ -1,4 +1,4 @@
-package com.example.rikochat.ui.screen.selectUser
+package com.example.rikochat.ui.screen.selectUserName
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,26 +13,30 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
-fun SelectUserScreen(
-    viewModel: SelectUserViewModel,
+fun SelectUserNameScreen(
+    viewModel: SelectUserNameViewModel,
     navigateToChat: (String) -> Unit
 ) {
 
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
 
     when (uiState.value) {
-        is SelectUserUiState.FailureLogin -> {
+        is SelectUserNameUiState.FailureLogin -> {
+
         }
 
-        SelectUserUiState.Idle -> {}
+        SelectUserNameUiState.Idle -> {}
 
-        is SelectUserUiState.SuccessLogin -> {
+        is SelectUserNameUiState.SuccessLogin -> {
             LaunchedEffect(key1 = Unit, block = {
                 navigateToChat(viewModel.usernameText.value)
+                viewModel.onEvent(SelectUserNameUiEvent.ScreenClosed)
             })
         }
     }
@@ -44,17 +48,20 @@ fun SelectUserScreen(
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
+            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
             horizontalAlignment = Alignment.End
         ) {
+
+            Text(text = "Choose your username", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
             TextField(
                 value = viewModel.usernameText.value,
-                onValueChange = { viewModel.onEvent(SelectUserUiEvent.OnUsernameChanged(it)) },
+                onValueChange = { viewModel.onEvent(SelectUserNameUiEvent.OnUsernameChanged(it)) },
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Button(onClick = { viewModel.onEvent(SelectUserUiEvent.OnJoinClick) }) {
-                Text(text = "Join")
+            Button(onClick = { viewModel.onEvent(SelectUserNameUiEvent.OnJoinClick) }) {
+                Text(text = "Save")
             }
 
         }

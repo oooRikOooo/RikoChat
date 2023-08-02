@@ -1,57 +1,36 @@
 package com.example.rikochat
 
+import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavType
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
-import com.example.rikochat.ui.screen.chat.ChatScreen
-import com.example.rikochat.ui.screen.selectUser.SelectUserScreen
+import com.example.rikochat.navigation.RootNavGraph
 import com.example.rikochat.ui.theme.RikoChatTheme
-import org.koin.androidx.viewmodel.ext.android.getViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {
+    @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             RikoChatTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    val navController = rememberNavController()
-                    NavHost(navController = navController, startDestination = "select_user") {
-                        composable(route = "select_user") {
-                            SelectUserScreen(
-                                viewModel = getViewModel(),
-                                navigateToChat = {
-                                    navController.navigate("chat_screen/$it")
-                                }
-                            )
-                        }
 
-                        composable(
-                            route = "chat_screen/{username}",
-                            arguments = listOf(
-                                navArgument(name = "username") {
-                                    type = NavType.StringType
-                                }
-                            )
-                        ) {
-                            val username = it.arguments?.getString("username")
-                            ChatScreen(username = username!!, viewModel = getViewModel())
-                        }
-
-                    }
+                val navHostController = rememberNavController()
+                val snackBarHostState = remember { SnackbarHostState() }
+                Scaffold(snackbarHost = { SnackbarHost(hostState = snackBarHostState) }) {
+                    RootNavGraph(
+                        navController = navHostController,
+                        snackBarHostState = snackBarHostState,
+                        isUserLoggedIn = Firebase.auth.currentUser != null
+                    )
                 }
+
             }
         }
     }

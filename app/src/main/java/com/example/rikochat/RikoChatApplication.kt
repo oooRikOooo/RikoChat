@@ -3,6 +3,7 @@ package com.example.rikochat
 import android.app.Application
 import com.example.rikochat.di.mapperModule
 import com.example.rikochat.di.networkModule
+import com.example.rikochat.di.useCaseModule
 import com.example.rikochat.di.viewModelModule
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -18,6 +19,7 @@ class RikoChatApplication : Application() {
             androidContext(this@RikoChatApplication)
             modules(
                 networkModule,
+                useCaseModule,
                 mapperModule,
                 viewModelModule
             )
