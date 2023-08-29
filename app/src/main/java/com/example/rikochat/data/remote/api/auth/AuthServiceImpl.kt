@@ -1,7 +1,7 @@
 package com.example.rikochat.data.remote.api.auth
 
 import com.example.rikochat.data.remote.mapper.IsUserNameAvailableMapper
-import com.example.rikochat.data.remote.model.isUserNameAvailableResponse.IsUserNameAvailableDto
+import com.example.rikochat.data.remote.model.rest.isUserNameAvailableResponse.IsUserNameAvailableDto
 import com.example.rikochat.domain.api.auth.AuthService
 import com.example.rikochat.domain.model.isUserNameAvailable.IsUserNameAvailable
 import com.example.rikochat.domain.model.user.User

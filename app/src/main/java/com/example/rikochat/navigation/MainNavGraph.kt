@@ -8,27 +8,36 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.rikochat.ui.screen.chat.ChatScreen
 import com.example.rikochat.ui.screen.main.MainScreen
+import com.example.rikochat.utils.navigation.popUpToInclusive
 import org.koin.androidx.compose.getViewModel
 
 fun NavGraphBuilder.mainNavGraph(navController: NavController) {
     navigation(startDestination = MainNav.MAIN_HOME_SCREEN, route = MainNav.MAIN_ROUTE) {
         composable(
-            route = "${MainNav.CHAT_SCREEN}/{username}",
+            route = "${MainNav.CHAT_SCREEN}/{username}/{roomId}",
             arguments = listOf(
                 navArgument(name = "username") {
+                    type = NavType.StringType
+                },
+                navArgument(name = "roomId") {
                     type = NavType.StringType
                 }
             )
         ) {
             val username = it.arguments?.getString("username")
-            ChatScreen(username = username!!, viewModel = getViewModel())
+            val roomId = it.arguments?.getString("roomId")
+            ChatScreen(username = username!!, viewModel = getViewModel(), roomId = roomId!!)
         }
 
         composable(
             route = MainNav.MAIN_HOME_SCREEN
         ) {
-            MainScreen(navigateToChat = {
-                navController.navigate("chat_screen/$it")
+            MainScreen(viewModel = getViewModel(), navigateToChat = { username, roomId ->
+                navController.navigate("chat_screen/$username/$roomId")
+            }, navigateToLogin = {
+                navController.navigate(route = AuthNav.AUTH_ROUTE) {
+                    popUpToInclusive(MainNav.MAIN_HOME_SCREEN)
+                }
             })
         }
     }

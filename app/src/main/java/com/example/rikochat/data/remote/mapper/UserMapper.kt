@@ -1,20 +1,29 @@
 package com.example.rikochat.data.remote.mapper
 
-import com.example.rikochat.data.remote.model.userResponse.UserDto
+import com.example.rikochat.data.remote.model.rest.user.UserDto
 import com.example.rikochat.domain.model.user.User
 
-class UserMapper {
-    fun mapFromEntity(entity: UserDto): User {
+class UserMapper : BaseMapper<User, UserDto> {
+    override fun mapFromEntity(dto: UserDto): User {
+
         return User(
-            username = entity.username,
-            email = entity.email
+            username = dto.username,
+            email = dto.email
         )
     }
 
-    fun mapToEntity(user: User): UserDto {
+    override fun mapToEntity(model: User): UserDto {
         return UserDto(
-            username = user.username,
-            email = user.email
+            username = model.username,
+            email = model.email
         )
+    }
+
+    fun mapFromEntityList(entityList: List<UserDto>): List<User> {
+        return entityList.map { mapFromEntity(it) }
+    }
+
+    fun mapToEntityList(userList: List<User>): List<UserDto> {
+        return userList.map { mapToEntity(it) }
     }
 }

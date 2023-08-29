@@ -1,6 +1,6 @@
 package com.example.rikochat
 
-import com.example.rikochat.data.remote.model.userResponse.UserDto
+import com.example.rikochat.data.remote.model.rest.user.UserDto
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.Test

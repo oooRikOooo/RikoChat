@@ -26,14 +26,17 @@ android {
     buildTypes {
         debug {
             minifyEnabled false
-            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.250:8080\""
+            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.105:8080\""
             debuggable true
         }
         release {
             minifyEnabled false
-            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.250:8080\""
+            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.105:8080\""
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+
+        // ws://192.168.88.105:8080
+        // ws://10.0.2.2:8080
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
@@ -68,6 +71,9 @@ configurations {
 }
 
 dependencies {
+
+    // Coil
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
     // Chucker
     debugImplementation("com.github.chuckerteam.chucker:library:3.5.2")

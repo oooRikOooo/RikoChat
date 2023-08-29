@@ -4,11 +4,11 @@ import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.example.rikochat.data.remote.api.auth.AuthServiceImpl
 import com.example.rikochat.data.remote.api.chatSocket.ChatSocketServiceImpl
-import com.example.rikochat.data.remote.api.message.MessageServiceImpl
+import com.example.rikochat.data.remote.api.message.RoomServiceImpl
 import com.example.rikochat.data.remote.api.user.UserServiceImpl
 import com.example.rikochat.domain.api.auth.AuthService
 import com.example.rikochat.domain.api.chatSocket.ChatSocketService
-import com.example.rikochat.domain.api.message.MessageService
+import com.example.rikochat.domain.api.message.RoomService
 import com.example.rikochat.domain.api.user.UserService
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
@@ -59,11 +59,18 @@ val networkModule = module {
             .build()
     }
 
-    single<MessageService> { MessageServiceImpl(get(named("RestHttpClient")), get()) }
+    single<RoomService> { RoomServiceImpl(get(named("RestHttpClient")), get(), get(), get()) }
 
-    single<ChatSocketService> { ChatSocketServiceImpl(get(named("WebSocketsHttpClient")), get()) }
+    single<ChatSocketService> {
+        ChatSocketServiceImpl(
+            get(named("WebSocketsHttpClient")),
+            get(),
+            get(),
+            get()
+        )
+    }
 
     single<AuthService> { AuthServiceImpl(get(named("RestHttpClient")), get()) }
 
-    single<UserService> { UserServiceImpl(get(named("RestHttpClient")), get()) }
+    single<UserService> { UserServiceImpl(get(named("RestHttpClient")), get(), get()) }
 }

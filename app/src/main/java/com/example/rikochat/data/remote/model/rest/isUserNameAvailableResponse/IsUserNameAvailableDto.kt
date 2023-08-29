@@ -1,4 +1,4 @@
-package com.example.rikochat.data.remote.model.isUserNameAvailableResponse
+package com.example.rikochat.data.remote.model.rest.isUserNameAvailableResponse
 
 import kotlinx.serialization.Serializable
 

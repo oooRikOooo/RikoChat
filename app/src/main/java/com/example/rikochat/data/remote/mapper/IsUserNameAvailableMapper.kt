@@ -1,6 +1,6 @@
 package com.example.rikochat.data.remote.mapper
 
-import com.example.rikochat.data.remote.model.isUserNameAvailableResponse.IsUserNameAvailableDto
+import com.example.rikochat.data.remote.model.rest.isUserNameAvailableResponse.IsUserNameAvailableDto
 import com.example.rikochat.domain.model.isUserNameAvailable.IsUserNameAvailable
 
 class IsUserNameAvailableMapper {
