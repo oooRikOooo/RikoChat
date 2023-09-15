@@ -2,10 +2,7 @@ package com.example.rikochat.domain.api.chatSocket
 
 import com.example.rikochat.BuildConfig.BASE_URL
 import com.example.rikochat.data.remote.model.rest.message.MessageDto
-import com.example.rikochat.domain.model.message.Message
-import com.example.rikochat.domain.model.user.User
 import com.example.rikochat.utils.DataState
-import kotlinx.coroutines.flow.Flow
 
 interface ChatSocketService {
 
@@ -15,9 +12,9 @@ interface ChatSocketService {
 
     suspend fun sendMessage(message: MessageDto)
 
-    fun observeMessages(): Flow<Message>
+//    fun observeMessages(): Flow<Message>
 
-    suspend fun updateMessageLike(
+    suspend fun sendUpdateMessageLike(
         messageId: String,
         ownerUsername: String,
         whoLikedUsername: String,
@@ -31,11 +28,13 @@ interface ChatSocketService {
         isRead: Boolean
     )
 
+//    fun observeUpdateMessageLike(): Flow<Message>
+
 //    fun observeRooms(): Flow<List<ChatRoom>>
 
 //    fun observeChatRoomsDetails(roomId: String): Flow<ChatRoom>
 
-    fun observeChatRoomMembers(): Flow<List<User>>
+//    fun observeChatRoomMembers(): Flow<List<User>>
 
     suspend fun closeSession()
 

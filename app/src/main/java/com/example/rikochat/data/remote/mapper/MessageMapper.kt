@@ -15,7 +15,7 @@ class MessageMapper {
             formattedTime = loginDto.timestamp.toHoursMinutes(),
             username = loginDto.username,
             roomId = loginDto.roomId,
-            isLiked = loginDto.isLiked,
+            usernamesWhoLiked = loginDto.usernamesWhoLiked,
             isRead = loginDto.isRead
         )
     }

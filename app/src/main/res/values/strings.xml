@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">RikoChat</string>
+    <string name="reply">Reply</string>
+    <string name="copy">Copy</string>
+    <string name="like">Like</string>
+    <string name="member">member</string>
+    <string name="members">members</string>
+    <string name="add_user">Add user</string>
+    <string name="add_user_to_group_chat">Add user to group chat</string>
 </resources>

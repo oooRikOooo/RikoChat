@@ -3,11 +3,10 @@ package com.example.rikochat.di
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.example.rikochat.data.remote.api.auth.AuthServiceImpl
-import com.example.rikochat.data.remote.api.chatSocket.ChatSocketServiceImpl
+import com.example.rikochat.data.remote.api.chatSocket.WebSocketManager
 import com.example.rikochat.data.remote.api.message.RoomServiceImpl
 import com.example.rikochat.data.remote.api.user.UserServiceImpl
 import com.example.rikochat.domain.api.auth.AuthService
-import com.example.rikochat.domain.api.chatSocket.ChatSocketService
 import com.example.rikochat.domain.api.message.RoomService
 import com.example.rikochat.domain.api.user.UserService
 import io.ktor.client.HttpClient
@@ -61,8 +60,8 @@ val networkModule = module {
 
     single<RoomService> { RoomServiceImpl(get(named("RestHttpClient")), get(), get(), get()) }
 
-    single<ChatSocketService> {
-        ChatSocketServiceImpl(
+    single {
+        WebSocketManager(
             get(named("WebSocketsHttpClient")),
             get(),
             get(),

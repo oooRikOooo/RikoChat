@@ -1,6 +1,8 @@
 package com.example.rikochat.ui.screen.chat
 
+import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,9 +25,12 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.PeopleOutline
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,18 +41,21 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -55,12 +63,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
+import com.example.rikochat.R
 import com.example.rikochat.domain.model.chatRoom.ChatRoom
 import com.example.rikochat.domain.model.chatRoom.ChatRoomType
 import com.example.rikochat.domain.model.message.Message
 import com.example.rikochat.domain.model.user.User
-import com.example.rikochat.ui.theme.Black20
-import com.example.rikochat.ui.theme.LightGreen
 
 @Composable
 fun ChatScreen(
@@ -72,6 +79,7 @@ fun ChatScreen(
     LaunchedEffect(
         key1 = Unit,
         block = {
+            Log.d("riko", "LaunchedEffect")
             viewModel.onEvent(ChatUiEvent.LoadRoomInfo(roomId))
         }
     )
@@ -129,7 +137,8 @@ fun ChatScreen(
                     viewModel.onEvent(ChatUiEvent.OnMessageChanged(it))
                 },
                 sendMessage = { viewModel.onEvent(ChatUiEvent.SendMessage(roomId)) },
-                addUserToChatRoom = { openAddUserToGroupChatDialog.value = true }
+                addUserToChatRoom = { openAddUserToGroupChatDialog.value = true },
+                viewModel = viewModel
             )
 
             if (openAddUserToGroupChatDialog.value) {
@@ -156,6 +165,7 @@ fun EmptyChatContent(
     addUserToChatRoom: () -> Unit
 ) {
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.secondary,
         topBar = {
             when (chatRoom.type) {
                 ChatRoomType.Direct -> {
@@ -179,10 +189,15 @@ fun EmptyChatContent(
         Box(
             modifier = Modifier
                 .padding(paddingValues)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.secondary),
             contentAlignment = Alignment.BottomCenter
         ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.secondary)
+            ) {
                 TextField(
                     value = messageText,
                     onValueChange = { onMessageChange(it) },
@@ -212,13 +227,15 @@ private fun ChatSuccessLoadContent(
     messageText: String,
     onMessageChange: (String) -> Unit,
     sendMessage: () -> Unit,
-    addUserToChatRoom: () -> Unit
+    addUserToChatRoom: () -> Unit,
+    viewModel: ChatViewModel
 ) {
     val configuration = LocalConfiguration.current
 
     val screenWidth = configuration.screenWidthDp.dp
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.secondary,
         topBar = {
             when (chatRoom.type) {
                 ChatRoomType.Direct -> {
@@ -242,6 +259,7 @@ private fun ChatSuccessLoadContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .background(MaterialTheme.colorScheme.secondary)
                 .padding(16.dp)
         ) {
             LazyColumn(
@@ -274,7 +292,8 @@ private fun ChatSuccessLoadContent(
                         isOwnMessage = isOwnMessage,
                         screenWidth = screenWidth,
                         isOwnNextMessage = isOwnNextMessage,
-                        isOwnPrevMessage = isOwnPrevMessage
+                        isOwnPrevMessage = isOwnPrevMessage,
+                        viewModel = viewModel
                     )
 
                     if (isMessageFirstOfDay) {
@@ -287,8 +306,7 @@ private fun ChatSuccessLoadContent(
                         ) {
                             Text(
                                 text = message.formattedDate,
-                                modifier = Modifier.background(Black20),
-                                color = Color.White
+                                modifier = Modifier.background(Color.Transparent)
                             )
                         }
                     }
@@ -323,74 +341,47 @@ private fun MessageItem(
     isOwnMessage: Boolean,
     screenWidth: Dp,
     isOwnNextMessage: Boolean,
-    isOwnPrevMessage: Boolean
+    isOwnPrevMessage: Boolean,
+    viewModel: ChatViewModel
 ) {
 
     val bottomStartPaddingMessage = if (isOwnNextMessage) {
-        if (!isOwnMessage) 5.dp else 20.dp
+        if (!isOwnMessage) 5.dp else 10.dp
     } else {
-        20.dp
+        10.dp
     }
 
     val topStartPaddingMessage = if (isOwnPrevMessage) {
-        if (!isOwnMessage) 5.dp else 20.dp
+        if (!isOwnMessage) 5.dp else 10.dp
     } else {
-        20.dp
+        10.dp
     }
 
     val bottomEndPaddingMessage = if (isOwnNextMessage) {
-        if (isOwnMessage) 5.dp else 20.dp
+        if (isOwnMessage) 5.dp else 10.dp
     } else {
-        20.dp
+        10.dp
     }
 
     val topEndPaddingMessage = if (isOwnPrevMessage) {
-        if (isOwnMessage) 5.dp else 20.dp
+        if (isOwnMessage) 5.dp else 10.dp
     } else {
-        20.dp
+        10.dp
     }
 
     Box(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                viewModel.onEvent(ChatUiEvent.ShowMessageActionsDialog(message))
+            },
         contentAlignment = if (isOwnMessage) Alignment.CenterEnd else Alignment.CenterStart
     ) {
         Column(
             modifier = Modifier
                 .widthIn(75.dp, screenWidth - 100.dp)
-                .drawBehind {
-                    if (!isOwnNextMessage) {
-                        val triangleWidth = 10.dp.toPx()
-                        val trianglePath = Path().apply {
-                            if (isOwnMessage) {
-                                moveTo(
-                                    size.width,
-                                    size.height - bottomEndPaddingMessage.toPx()
-                                )
-                                lineTo(size.width + triangleWidth, size.height)
-                                lineTo(
-                                    size.width - bottomEndPaddingMessage.toPx(),
-                                    size.height
-                                )
-                                close()
-                            } else {
-                                moveTo(
-                                    0f,
-                                    size.height - bottomEndPaddingMessage.toPx()
-                                )
-                                lineTo(-1 * triangleWidth, size.height)
-                                lineTo(bottomEndPaddingMessage.toPx(), size.height)
-                                close()
-                            }
-                        }
-
-                        drawPath(
-                            path = trianglePath,
-                            color = LightGreen
-                        )
-                    }
-                }
                 .background(
-                    color = LightGreen,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(
                         topStart = topStartPaddingMessage,
                         bottomStart = bottomStartPaddingMessage,
@@ -404,29 +395,105 @@ private fun MessageItem(
                 Text(
                     text = message.username,
                     fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
                 )
             }
 
             Row(
                 modifier = Modifier
                     .align(Alignment.End),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                Text(text = message.text, color = Color.White)
+                Text(
+                    text = message.text,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
 
                 Text(
                     modifier = Modifier.padding(top = 10.dp),
                     text = message.formattedTime,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
                     fontSize = 10.sp
                 )
             }
 
+
+            if (message.usernamesWhoLiked.isNotEmpty()) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Icon(imageVector = Icons.Filled.ThumbUp, contentDescription = null)
+
+                    Text(text = message.usernamesWhoLiked.size.toString())
+                }
+
+            }
+
+        }
+
+        if (viewModel.clickedMessage != null && message.id == viewModel.clickedMessage!!.id) {
+            MessageActions(viewModel = viewModel)
         }
     }
 
+}
+
+@Composable
+fun MessageActions(
+    isMessageContainText: Boolean = true,
+    viewModel: ChatViewModel
+) {
+
+    val clipboardManager = LocalClipboardManager.current
+
+    val actionList = MessageAction.getListOfActions(
+        replyAction = {
+            viewModel.clickedMessage = null
+        },
+        copyAction = if (isMessageContainText) {
+            {
+                clipboardManager.setText(AnnotatedString(viewModel.clickedMessage!!.text))
+                viewModel.clickedMessage = null
+            }
+        } else null,
+        likeAction = {
+            viewModel.onEvent(
+                ChatUiEvent.LikeMessage(
+                    viewModel.clickedMessage!!.id
+                )
+            )
+            viewModel.clickedMessage = null
+        }
+    )
+
+    DropdownMenu(
+        expanded = viewModel.clickedMessage != null,
+        onDismissRequest = { viewModel.onEvent(ChatUiEvent.HideMessageActionsDialog) }
+    ) {
+        actionList.forEach {
+            DropdownMenuItem(
+                text = {
+                    Row(
+                        verticalAlignment = CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        Icon(imageVector = it.icon, contentDescription = null)
+                        Text(text = stringResource(it.text))
+                    }
+                },
+                onClick = it.onClick
+            )
+        }
+    }
+
+//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//        LazyColumn(content = {
+//            items(items = actionList) {
+//                Row(modifier = Modifier.clickable { it.onClick() }) {
+//                    Icon(imageVector = it.icon, contentDescription = null)
+//                }
+//            }
+//        })
+//    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -443,9 +510,13 @@ fun AddUserToGroupChatRoomDialog(
                 .wrapContentHeight(),
             shape = MaterialTheme.shapes.large
         ) {
-            Column(modifier = Modifier.padding(16.dp)) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+
                 Text(
-                    text = "New group chat",
+                    text = stringResource(id = R.string.add_user_to_group_chat),
                     modifier = Modifier
                         .fillMaxWidth()
                         .align(Alignment.Start),
@@ -492,7 +563,7 @@ fun AddUserToGroupChatRoomDialog(
 
                     }
                 ) {
-                    Text(text = "Create group")
+                    Text(text = stringResource(id = R.string.add_user))
                 }
 
             }
@@ -504,51 +575,68 @@ fun AddUserToGroupChatRoomDialog(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GroupChatTopBar(title: String, membersCount: Int, addUserToChatRoom: () -> Unit) {
-    TopAppBar(
-        title = {
-            Row(
-                modifier = Modifier
-                    .padding(vertical = 25.dp, horizontal = 10.dp)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(20.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                AsyncImage(
-                    model = "",
-                    contentDescription = "Group chat picture",
+    Surface(shadowElevation = 8.dp) {
+        TopAppBar(
+            colors = TopAppBarDefaults.topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            title = {
+                Row(
                     modifier = Modifier
-                        .width(50.dp)
-                        .height(50.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                    error = rememberVectorPainter(image = Icons.Filled.PeopleOutline)
-                )
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start
+                        .padding(horizontal = 10.dp)
+                        .fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(20.dp),
+                    verticalAlignment = CenterVertically,
                 ) {
-                    Text(text = title, fontSize = 25.sp)
-                    Text(
-                        text = membersCount.toString() + if (membersCount == 1) "member" else "members",
-                        fontSize = 16.sp
+                    AsyncImage(
+                        model = "",
+                        contentDescription = "Group chat picture",
+                        modifier = Modifier
+                            .width(50.dp)
+                            .height(50.dp)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        error = rememberVectorPainter(image = Icons.Filled.PeopleOutline)
+                    )
+
+                    val memberMessage =
+                        if (membersCount == 1) stringResource(id = R.string.member) else stringResource(
+                            id = R.string.members
+                        )
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.Start
+                    ) {
+                        Text(
+                            text = title,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Text(
+                            text = "$membersCount $memberMessage",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    }
+
+                }
+            },
+            actions = {
+                IconButton(onClick = {
+                    addUserToChatRoom()
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = "Add user to group chat",
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
+            }
+        )
 
-            }
-        },
-        actions = {
-            IconButton(onClick = {
-                addUserToChatRoom()
-            }) {
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = "Add user to group chat",
-                    tint = Color.White
-                )
-            }
-        }
-    )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -42,6 +42,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -93,11 +94,13 @@ fun MainScreen(
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_CREATE -> {
+                    Log.d("riko", "On Create")
                     viewModel.connectToWebSocket()
                 }
 
                 Lifecycle.Event.ON_PAUSE -> {}
                 Lifecycle.Event.ON_DESTROY -> {
+                    Log.d("riko", "On Destroy")
                     viewModel.disconnect()
                 }
 
@@ -134,9 +137,12 @@ fun MainScreen(
         MainUserUiState.Loading -> LoadingProgressIndicator()
 
         is MainUserUiState.SuccessfulLoad -> {
-            LaunchedEffect(key1 = Unit, block = {
-                viewModel.onEvent(MainUiEvent.LoadUserChatRooms)
-            })
+            LaunchedEffect(
+                key1 = Unit,
+                block = {
+                    viewModel.onEvent(MainUiEvent.LoadUserChatRooms)
+                }
+            )
 
             DrawerWithContent(viewModel, drawerState, uiState, state.user, navigateToChat)
         }
@@ -182,15 +188,19 @@ fun DrawerWithContent(
     ModalNavigationDrawer(drawerContent = {
         DrawerContent(user = user)
     }, drawerState = drawerState) {
-        Scaffold(topBar = {
-            MainScreenTopBar(
-                drawerState = drawerState,
-                logout = {}
-            )
-        }) { paddingValues ->
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.secondary,
+            topBar = {
+                MainScreenTopBar(
+                    drawerState = drawerState,
+                    logout = {}
+                )
+            }
+        ) { paddingValues ->
             when (val state = uiState.value) {
                 MainUiState.EmptyScreen -> {
                     Scaffold(
+                        containerColor = MaterialTheme.colorScheme.secondary,
                         floatingActionButton = {
                             FloatingActionButton(
                                 onClick = {
@@ -223,7 +233,9 @@ fun DrawerWithContent(
                     Box(
                         modifier = Modifier
                             .padding(paddingValues)
-                            .fillMaxSize(), contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.secondary),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(text = state.message)
 
@@ -268,6 +280,7 @@ fun MainContent(
     navigateToChat: (String, String) -> Unit
 ) {
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.secondary,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
@@ -282,14 +295,19 @@ fun MainContent(
             modifier = Modifier
                 .padding(paddingValues)
                 .padding(innerPaddingValues)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.secondary),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             itemsIndexed(items) { index, item ->
                 ChatItem(user = user, chatRoom = item, navigateToChat = navigateToChat)
 
                 if (index < items.lastIndex)
-                    Divider(color = Color.LightGray, thickness = 1.dp)
+                    Divider(
+//                        color = Color.LightGray,
+                        thickness = 1.dp,
+                        modifier = Modifier.padding(horizontal = 20.dp)
+                    )
 
             }
         }
@@ -318,7 +336,7 @@ fun ChatItem(user: User, chatRoom: ChatRoom, navigateToChat: (String, String) ->
             error = rememberVectorPainter(image = Icons.Filled.AccountCircle)
         )
 
-        Text(text = chatRoom.title, fontSize = 16.sp)
+        Text(text = chatRoom.title, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSecondary)
     }
 }
 
@@ -396,7 +414,9 @@ fun CreateChatRoomDialog(
 @Composable
 fun NoUserFoundScreen(navigateToLogin: () -> Unit) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.secondary),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -422,37 +442,50 @@ private fun MainScreenTopBar(
 
     val coroutineScopeTopBar = rememberCoroutineScope()
 
-    TopAppBar(
-        title = { Text(text = stringResource(id = R.string.app_name)) },
-        actions = {
-            IconButton(
-                onClick = { }) {
-                Icon(
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = "Search through contacts"
+    Surface(shadowElevation = 8.dp) {
+        TopAppBar(
+            colors = topAppBarColors(
+                containerColor = MaterialTheme.colorScheme.primary
+            ),
+            title = {
+                Text(
+                    text = stringResource(id = R.string.app_name),
+                    color = MaterialTheme.colorScheme.onPrimary
                 )
-            }
-        },
-        navigationIcon = {
-            IconButton(onClick = {
-                if (drawerState.isClosed) {
-                    coroutineScopeTopBar.launch {
-                        drawerState.open()
-                    }
-                } else {
-                    coroutineScopeTopBar.launch {
-                        drawerState.close()
-                    }
+            },
+
+            actions = {
+                IconButton(
+                    onClick = { }) {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        contentDescription = "Search through contacts"
+                    )
                 }
-            }) {
-                Icon(
-                    imageVector = Icons.Filled.Menu,
-                    contentDescription = "Menu button",
-                    tint = White
-                )
+            },
+            navigationIcon = {
+                IconButton(onClick = {
+                    if (drawerState.isClosed) {
+                        coroutineScopeTopBar.launch {
+                            drawerState.open()
+                        }
+                    } else {
+                        coroutineScopeTopBar.launch {
+                            drawerState.close()
+                        }
+                    }
+                }) {
+                    Icon(
+                        imageVector = Icons.Filled.Menu,
+                        contentDescription = "Menu button",
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
+                }
             }
-        }
-    )
+        )
+
+    }
 }
 
 @Composable

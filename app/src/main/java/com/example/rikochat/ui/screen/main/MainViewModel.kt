@@ -1,12 +1,13 @@
 package com.example.rikochat.ui.screen.main
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rikochat.data.remote.api.NO_USER_FOUND
-import com.example.rikochat.domain.api.chatSocket.ChatSocketService
+import com.example.rikochat.data.remote.api.chatSocket.WebSocketManager
 import com.example.rikochat.domain.model.chatRoom.ChatRoomType
 import com.example.rikochat.domain.usecase.createChatRoom.CreateChatRoomUseCase
 import com.example.rikochat.domain.usecase.getUser.GetUserUseCase
@@ -28,7 +29,7 @@ class MainViewModel(
     private val getUserUseCase: GetUserUseCase,
     private val getUserChatRoomsUseCase: GetUserChatRoomsUseCase,
     private val createChatRoomUseCase: CreateChatRoomUseCase,
-    private val chatSocketService: ChatSocketService
+    private val webSocketManager: WebSocketManager
 ) : ViewModel() {
     private val viewModelState = MutableStateFlow(MainViewModelState())
 
@@ -80,13 +81,13 @@ class MainViewModel(
 
     fun connectToWebSocket() {
 
-        if (chatSocketService.isWebSocketConnected()) return
+        if (webSocketManager.isWebSocketConnected()) return
 
         viewModelScope.launch(Dispatchers.IO) {
 
             val username = Firebase.auth.currentUser!!.displayName!!
 
-            when (val result = chatSocketService.initSession(username)) {
+            when (val result = webSocketManager.initSession(username)) {
                 is DataState.Error -> {
                     viewModelState.update {
                         it.copy(error = result.message)
@@ -94,18 +95,7 @@ class MainViewModel(
                 }
 
                 is DataState.Success -> {
-//                    chatSocketService.observeMessages(viewModelScope)
-//                        .collect { message ->
-//                            val list = viewModelState.value.rooms
-//                            Log.d("riko", "adwad")
-//                            list.find {
-//                                it.id == message.roomId
-//                            }?.lastMessage = message.text
-//
-//                            viewModelState.update {
-//                                it.copy(rooms = list, error = null)
-//                            }
-//                        }
+                    webSocketManager.observeIncoming()
                 }
             }
 
@@ -115,7 +105,8 @@ class MainViewModel(
 
     fun disconnect() {
         viewModelScope.launch(Dispatchers.IO) {
-            chatSocketService.closeSession()
+            Log.d("riko", "disconnect")
+            webSocketManager.closeSession()
         }
     }
 
@@ -219,6 +210,7 @@ class MainViewModel(
     }
 
     override fun onCleared() {
+        Log.d("riko", "onCleared")
         super.onCleared()
         disconnect()
     }

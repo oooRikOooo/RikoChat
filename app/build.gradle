@@ -63,6 +63,7 @@ android {
 ext {
     compose_version = '1.4.0'
     ktor_version = '2.3.2'
+    room_version = '2.4.3'
 }
 
 configurations {
@@ -71,6 +72,12 @@ configurations {
 }
 
 dependencies {
+
+
+    // Room
+    implementation "androidx.room:room-runtime:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
 
     // Coil
     implementation("io.coil-kt:coil-compose:2.4.0")

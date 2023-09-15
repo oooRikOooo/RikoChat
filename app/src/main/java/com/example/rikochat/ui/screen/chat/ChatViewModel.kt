@@ -1,13 +1,15 @@
 package com.example.rikochat.ui.screen.chat
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.rikochat.data.remote.api.chatSocket.WebSocketManager
 import com.example.rikochat.data.remote.model.rest.message.MessageDto
-import com.example.rikochat.domain.api.chatSocket.ChatSocketService
 import com.example.rikochat.domain.api.message.RoomService
+import com.example.rikochat.domain.model.message.Message
 import com.example.rikochat.domain.usecase.addUserToGroupChat.AddUserToGroupChatUseCase
 import com.example.rikochat.domain.usecase.getChatRoom.GetChatRoomUseCase
 import com.example.rikochat.domain.usecase.getChatRoomMembers.GetChatRoomMembersUseCase
@@ -28,7 +30,7 @@ import kotlinx.coroutines.launch
 
 class ChatViewModel(
     private val roomService: RoomService,
-    private val chatSocketService: ChatSocketService,
+    private val webSocketManager: WebSocketManager,
     private val getChatRoomUseCase: GetChatRoomUseCase,
     private val getChatRoomMembersUseCase: GetChatRoomMembersUseCase,
     private val addUserToGroupChatUseCase: AddUserToGroupChatUseCase
@@ -53,6 +55,8 @@ class ChatViewModel(
         private set
 
     var isDialogAddUserToGroupChatRoomUsernameError by mutableStateOf(false)
+
+    var clickedMessage by mutableStateOf<Message?>(null)
 
     fun onEvent(event: ChatUiEvent) {
         when (event) {
@@ -92,6 +96,18 @@ class ChatViewModel(
                 isDialogAddUserToGroupChatRoomUsernameError = false
                 dialogAddUserToGroupChatRoomUsernameError = ""
                 dialogAddUserToGroupChatRoomUsername = event.text
+            }
+
+            is ChatUiEvent.LikeMessage -> {
+                updateMessageLike(event.messageId)
+            }
+
+            ChatUiEvent.HideMessageActionsDialog -> {
+                clickedMessage = null
+            }
+
+            is ChatUiEvent.ShowMessageActionsDialog -> {
+                clickedMessage = event.message
             }
         }
     }
@@ -136,12 +152,23 @@ class ChatViewModel(
                     timestamp = 0,
                     username = username,
                     isRead = false,
-                    isLiked = false
+                    usernamesWhoLiked = mutableListOf()
                 )
 
-                chatSocketService.sendMessage(message)
+                webSocketManager.sendMessage(message)
                 messageText.value = ""
             }
+        }
+    }
+
+    private fun updateMessageLike(messageId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val username = FirebaseAuth.getInstance().currentUser?.displayName!!
+
+            webSocketManager.sendUpdateMessageLike(
+                messageId = messageId,
+                whoLikedUsername = username
+            )
         }
     }
 
@@ -166,9 +193,10 @@ class ChatViewModel(
                 }
             }
         }
-
+        Log.d("riko", "getAllRoomMessagesAsync")
         observeMessages(roomId)
         observeChatRoomMembers()
+        observeUpdateMessage(roomId)
 //        observeRoomDetailsChanges(roomId)
     }
 
@@ -205,7 +233,8 @@ class ChatViewModel(
     }
 
     private fun observeMessages(roomId: String) {
-        chatSocketService.observeMessages().onEach { message ->
+        webSocketManager.newMessageFlow.onEach { message ->
+            Log.d("riko", "observeMessages")
             if (message.roomId == roomId) {
                 val newList = viewModelState.value.messages?.toMutableList()?.apply {
                     add(0, message)
@@ -217,22 +246,43 @@ class ChatViewModel(
         }.launchIn(viewModelScope)
     }
 
-//    private fun observeRoomDetailsChanges(roomId: String) {
-//        chatSocketService.observeChatRoomsDetails(roomId)
-//            .onEach { chatRoom ->
-//                viewModelState.update {
-//                    it.copy(chatRoom = chatRoom)
-//                }
-//            }.launchIn(viewModelScope)
-//    }
+    private fun observeUpdateMessage(roomId: String) {
+        webSocketManager.updateMessageFlow.onEach { message ->
+            if (message.roomId == roomId) {
+
+                Log.d("riko", "oldList: ${viewModelState.value.messages}")
+
+                val newList = viewModelState.value.messages?.toMutableList()
+
+                newList?.let { list ->
+                    val index = list.indexOfFirst { it.id == message.id }
+                    if (index != -1) {
+                        list[index] = message
+                    }
+                }
+
+                Log.d("riko", "newList: $newList")
+
+                viewModelState.update {
+                    it.copy(messages = newList, error = null)
+                }
+
+            }
+        }.launchIn(viewModelScope)
+    }
 
     private fun observeChatRoomMembers() {
-        chatSocketService.observeChatRoomMembers()
+        webSocketManager.updateChatRoomMembersFlow
             .onEach { users ->
                 viewModelState.update {
                     it.copy(chatRoomMembers = users)
                 }
             }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        Log.d("riko", "OnCleared Chat")
     }
 
 }

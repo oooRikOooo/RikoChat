@@ -8,5 +8,10 @@ data class Message(
     val username: String,
     val roomId: String,
     val isRead: Boolean,
-    val isLiked: Boolean
-)
+    val usernamesWhoLiked: MutableList<String>
+) {
+    fun updateUsernamesWhoLiked(newList: List<String>) {
+        usernamesWhoLiked.clear()
+        usernamesWhoLiked.addAll(newList)
+    }
+}
