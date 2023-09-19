@@ -5,22 +5,35 @@ import com.example.rikochat.domain.model.message.Message
 import com.example.rikochat.utils.toHoursMinutes
 import com.example.rikochat.utils.toStringDate
 
-class MessageMapper {
+class MessageMapper : BaseMapper<Message, MessageDto> {
 
-    fun mapFromEntity(loginDto: MessageDto): Message{
+    override fun mapFromEntity(dto: MessageDto): Message {
         return Message(
-            id = loginDto.id,
-            text = loginDto.text,
-            formattedDate = loginDto.timestamp.toStringDate(),
-            formattedTime = loginDto.timestamp.toHoursMinutes(),
-            username = loginDto.username,
-            roomId = loginDto.roomId,
-            usernamesWhoLiked = loginDto.usernamesWhoLiked,
-            isRead = loginDto.isRead
+            id = dto.id,
+            text = dto.text,
+            formattedDate = dto.timestamp.toStringDate(),
+            formattedTime = dto.timestamp.toHoursMinutes(),
+            timestamp = dto.timestamp,
+            username = dto.username,
+            roomId = dto.roomId,
+            usernamesWhoLiked = dto.usernamesWhoLiked,
+            isRead = dto.isRead
         )
     }
 
-    fun mapFromEntityList(list: List<MessageDto>): List<Message>{
+    override fun mapToEntity(model: Message): MessageDto {
+        return MessageDto(
+            id = model.id,
+            text = model.text,
+            username = model.username,
+            roomId = model.roomId,
+            usernamesWhoLiked = model.usernamesWhoLiked,
+            isRead = model.isRead,
+            timestamp = model.timestamp
+        )
+    }
+
+    fun mapFromEntityList(list: List<MessageDto>): List<Message> {
         return list.map {
             mapFromEntity(it)
         }

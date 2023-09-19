@@ -1,6 +1,7 @@
 package com.example.rikochat.ui.screen.chat
 
 import android.util.Log
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -44,9 +45,11 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Alignment.Companion.Bottom
 import androidx.compose.ui.Alignment.Companion.CenterVertically
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,7 +64,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.rikochat.R
 import com.example.rikochat.domain.model.chatRoom.ChatRoom
@@ -77,14 +79,14 @@ fun ChatScreen(
 ) {
 
     LaunchedEffect(
-        key1 = Unit,
+        key1 = roomId,
         block = {
             Log.d("riko", "LaunchedEffect")
             viewModel.onEvent(ChatUiEvent.LoadRoomInfo(roomId))
         }
     )
 
-    val state = viewModel.uiState.collectAsStateWithLifecycle()
+    val state = viewModel.uiState.collectAsState()
 
     val openAddUserToGroupChatDialog = remember { mutableStateOf(false) }
 
@@ -232,7 +234,7 @@ private fun ChatSuccessLoadContent(
 ) {
     val configuration = LocalConfiguration.current
 
-    val screenWidth = configuration.screenWidthDp.dp
+    val screenWidth = remember(configuration) { configuration.screenWidthDp.dp }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.secondary,
@@ -272,20 +274,42 @@ private fun ChatSuccessLoadContent(
                     Spacer(modifier = Modifier.height(32.dp))
                 }
 
-                itemsIndexed(messages) { index, message ->
-                    val isOwnMessage = message.username == username
-
-                    val isMessageFirstOfDay = messages.last {
-                        message.formattedDate == it.formattedDate
-                    } == message
-
-                    val isOwnPrevMessage = if (index == messages.size - 1) false else {
-                        message.username == messages[index + 1].username
+                itemsIndexed(items = messages, key = { index, message ->
+                    messages[index].id
+                }) { index, message ->
+                    val isOwnMessage = remember {
+                        message.username == username
                     }
 
-                    val isOwnNextMessage = if (index == 0) false else {
-                        message.username == messages[index - 1].username
+                    val isMessageFirstOfDay = remember(messages) {
+                        messages.last {
+                            message.formattedDate == it.formattedDate
+                        } == message
                     }
+
+                    val isOwnPrevMessage = remember(messages) {
+                        if (index == messages.size - 1) false else {
+                            message.username == messages[index + 1].username
+                        }
+                    }
+
+                    val isOwnNextMessage = remember(messages) {
+                        if (index == 0) false else {
+                            message.username == messages[index - 1].username
+                        }
+                    }
+
+                    val isTimeDifferenceMore5Min = remember(messages) {
+                        if (messages.size == 1) {
+                            true
+                        } else if (index != messages.size - 1) {
+                            message.timestamp - messages[index + 1].timestamp > 300_000 // 5 min
+
+                        } else {
+                            messages[index - 1].timestamp - message.timestamp > 300_000
+                        }
+                    }
+
 
                     MessageItem(
                         message = message,
@@ -293,6 +317,7 @@ private fun ChatSuccessLoadContent(
                         screenWidth = screenWidth,
                         isOwnNextMessage = isOwnNextMessage,
                         isOwnPrevMessage = isOwnPrevMessage,
+                        isTimeDifferenceMore5Min = isTimeDifferenceMore5Min,
                         viewModel = viewModel
                     )
 
@@ -311,7 +336,13 @@ private fun ChatSuccessLoadContent(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(if (isOwnPrevMessage) 3.dp else 32.dp))
+                    Spacer(
+                        modifier = Modifier.height(
+                            if (isOwnPrevMessage) {
+                                if (isTimeDifferenceMore5Min) 5.dp else 1.dp
+                            } else 32.dp
+                        )
+                    )
 
                 }
             }
@@ -342,32 +373,44 @@ private fun MessageItem(
     screenWidth: Dp,
     isOwnNextMessage: Boolean,
     isOwnPrevMessage: Boolean,
+    isTimeDifferenceMore5Min: Boolean,
     viewModel: ChatViewModel
 ) {
 
-    val bottomStartPaddingMessage = if (isOwnNextMessage) {
-        if (!isOwnMessage) 5.dp else 10.dp
-    } else {
-        10.dp
+    val bottomStartPaddingMessage = remember(isOwnNextMessage) {
+        if (isOwnNextMessage) {
+            if (!isOwnMessage) 5.dp else 10.dp
+        } else {
+            10.dp
+        }
     }
 
-    val topStartPaddingMessage = if (isOwnPrevMessage) {
-        if (!isOwnMessage) 5.dp else 10.dp
-    } else {
-        10.dp
+    val topStartPaddingMessage = remember(isOwnPrevMessage) {
+        if (isOwnPrevMessage) {
+            if (!isOwnMessage) 5.dp else 10.dp
+        } else {
+            10.dp
+        }
     }
 
-    val bottomEndPaddingMessage = if (isOwnNextMessage) {
-        if (isOwnMessage) 5.dp else 10.dp
-    } else {
-        10.dp
+    val bottomEndPaddingMessage = remember(isOwnNextMessage) {
+        if (isOwnNextMessage) {
+            if (isOwnMessage) 5.dp else 10.dp
+        } else {
+            10.dp
+        }
     }
 
-    val topEndPaddingMessage = if (isOwnPrevMessage) {
-        if (isOwnMessage) 5.dp else 10.dp
-    } else {
-        10.dp
+    val topEndPaddingMessage = remember(isOwnPrevMessage) {
+        if (isOwnPrevMessage) {
+            if (isOwnMessage) 5.dp else 10.dp
+        } else {
+            10.dp
+        }
     }
+
+
+    val messageWidth = remember { screenWidth - 100.dp }
 
     Box(
         modifier = Modifier
@@ -379,7 +422,7 @@ private fun MessageItem(
     ) {
         Column(
             modifier = Modifier
-                .widthIn(75.dp, screenWidth - 100.dp)
+                .widthIn(75.dp, messageWidth)
                 .background(
                     color = MaterialTheme.colorScheme.secondaryContainer,
                     shape = RoundedCornerShape(
@@ -391,7 +434,8 @@ private fun MessageItem(
                 )
                 .padding(vertical = 8.dp, horizontal = 16.dp)
         ) {
-            if (!isOwnPrevMessage) {
+
+            if ((!isOwnPrevMessage || isTimeDifferenceMore5Min) && !isOwnMessage) {
                 Text(
                     text = message.username,
                     fontWeight = FontWeight.Bold,
@@ -399,34 +443,46 @@ private fun MessageItem(
                 )
             }
 
+            Text(
+                text = message.text,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                lineHeight = 20.sp
+            )
+
+
             Row(
-                modifier = Modifier
-                    .align(Alignment.End),
-                verticalAlignment = CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(5.dp)
+                modifier = Modifier.align(Alignment.End),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = CenterVertically
             ) {
-                Text(
-                    text = message.text,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
 
-                Text(
-                    modifier = Modifier.padding(top = 10.dp),
-                    text = message.formattedTime,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    fontSize = 10.sp
-                )
-            }
+                AnimatedVisibility(message.usernamesWhoLiked.isNotEmpty()) {
 
+                    Row {
+                        Icon(
+                            imageVector = Icons.Filled.ThumbUp,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            contentDescription = null
+                        )
 
-            if (message.usernamesWhoLiked.isNotEmpty()) {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Icon(imageVector = Icons.Filled.ThumbUp, contentDescription = null)
+                        Text(
+                            text = message.usernamesWhoLiked.size.toString(),
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                    }
 
-                    Text(text = message.usernamesWhoLiked.size.toString())
                 }
 
+                Text(
+                    modifier = Modifier.align(Bottom),
+                    text = message.formattedTime,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontSize = 10.sp,
+                    textAlign = TextAlign.End
+                )
+
             }
+
 
         }
 
@@ -652,4 +708,39 @@ fun DirectChatTopBar(user: User, addUserToChatRoom: () -> Unit) {
                 Text(text = user.username, fontSize = 16.sp)
             }
         })
+}
+
+private fun calculateBottomStartPaddingMessage(
+    isOwnNextMessage: Boolean,
+    isOwnMessage: Boolean
+): Dp {
+    return if (isOwnNextMessage) {
+        if (!isOwnMessage) 5.dp else 10.dp
+    } else {
+        10.dp
+    }
+}
+
+private fun calculateTopStartPaddingMessage(isOwnPrevMessage: Boolean, isOwnMessage: Boolean): Dp {
+    return if (isOwnPrevMessage) {
+        if (!isOwnMessage) 5.dp else 10.dp
+    } else {
+        10.dp
+    }
+}
+
+private fun calculateBottomEndPaddingMessage(isOwnNextMessage: Boolean, isOwnMessage: Boolean): Dp {
+    return if (isOwnNextMessage) {
+        if (isOwnMessage) 5.dp else 10.dp
+    } else {
+        10.dp
+    }
+}
+
+private fun calculateTopEndPaddingMessage(isOwnPrevMessage: Boolean, isOwnMessage: Boolean): Dp {
+    return if (isOwnPrevMessage) {
+        if (isOwnMessage) 5.dp else 10.dp
+    } else {
+        10.dp
+    }
 }

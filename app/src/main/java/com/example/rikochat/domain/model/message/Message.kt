@@ -5,13 +5,9 @@ data class Message(
     val text: String,
     val formattedDate: String,
     val formattedTime: String,
+    val timestamp: Long,
     val username: String,
     val roomId: String,
     val isRead: Boolean,
     val usernamesWhoLiked: MutableList<String>
-) {
-    fun updateUsernamesWhoLiked(newList: List<String>) {
-        usernamesWhoLiked.clear()
-        usernamesWhoLiked.addAll(newList)
-    }
-}
+)
