@@ -78,29 +78,6 @@ class LoginViewModel(
                 }
 
                 is DataState.Success -> {
-                    result.data.displayName?.let {
-                        when (val getUserResult = getUserUseCase.invoke(it)) {
-                            is DataState.Error -> {
-                                if (getUserResult.message == NO_USER_FOUND) {
-                                    _uiState.emit(LoginUiState.UsernameNotExist)
-                                } else {
-                                    _uiState.emit(LoginUiState.FailedLogin(getUserResult.message))
-                                }
-                                return@launch
-                            }
-
-                            is DataState.Success -> {
-                                if (getUserResult.data.username.isEmpty()) {
-                                    _uiState.emit(LoginUiState.UsernameNotExist)
-                                    return@launch
-                                }
-                            }
-                        }
-                    } ?: run {
-                        _uiState.emit(LoginUiState.UsernameNotExist)
-                        return@launch
-                    }
-
                     _uiState.emit(LoginUiState.SuccessLogin)
                 }
             }

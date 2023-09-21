@@ -8,6 +8,4 @@ sealed class LoginUiState {
     object SuccessLogin : LoginUiState()
 
     data class FailedLogin(val error: String) : LoginUiState()
-
-    object UsernameNotExist : LoginUiState()
 }

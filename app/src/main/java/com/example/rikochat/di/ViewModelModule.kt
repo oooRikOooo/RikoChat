@@ -1,7 +1,6 @@
 package com.example.rikochat.di
 
 import com.example.rikochat.ui.screen.chat.ChatViewModel
-import com.example.rikochat.ui.screen.createUsername.CreateUsernameViewModel
 import com.example.rikochat.ui.screen.login.LoginViewModel
 import com.example.rikochat.ui.screen.main.MainViewModel
 import com.example.rikochat.ui.screen.registration.RegistrationViewModel
@@ -14,6 +13,5 @@ val viewModelModule = module {
     viewModel { ChatViewModel(get(), get(), get(), get(), get()) }
     viewModel { RegistrationViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
-    viewModel { CreateUsernameViewModel(get(), get()) }
     viewModel { MainViewModel(get(), get(), get(), get()) }
 }

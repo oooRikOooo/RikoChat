@@ -44,8 +44,7 @@ fun LoginScreen(
     viewModel: LoginViewModel,
     snackBarHostState: SnackbarHostState,
     navigateToMainScreen: () -> Unit,
-    navigateToRegisterScreen: () -> Unit,
-    navigateToCreateUsernameScreen: () -> Unit
+    navigateToRegisterScreen: () -> Unit
 ) {
 
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,12 +66,6 @@ fun LoginScreen(
         }
 
         LoginUiState.Loading -> LoadingProgressIndicator()
-        LoginUiState.UsernameNotExist -> {
-            LaunchedEffect(key1 = Unit, block = {
-                navigateToCreateUsernameScreen()
-                viewModel.onEvent(LoginUiEvent.LoginScreenIsClosed)
-            })
-        }
     }
 
     Box(
