@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rikochat.domain.usecase.createAccount.CreateAccountUseCase
+import com.example.rikochat.domain.usecase.createAccount.RegisterUseCase
 import com.example.rikochat.utils.DataState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class RegistrationViewModel(
-    private val createAccountUseCase: CreateAccountUseCase,
+    private val registerUseCase: RegisterUseCase,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<RegistrationUiState>(RegistrationUiState.Idle)
@@ -68,7 +68,7 @@ class RegistrationViewModel(
             _uiState.emit(RegistrationUiState.Loading)
 
             when (val result =
-                createAccountUseCase.invoke(username.trim(), email.trim(), password.trim())
+                registerUseCase.invoke(username.trim(), email.trim(), password.trim())
             ) {
                 is DataState.Error -> {
                     _uiState.emit(RegistrationUiState.FailedRegistration(result.message))

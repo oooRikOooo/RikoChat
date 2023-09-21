@@ -8,8 +8,6 @@ import com.example.rikochat.utils.DataState
 interface UserService {
     suspend fun getUser(username: String): DataState<User>
 
-    suspend fun saveUser(user: User): DataState<Unit>
-
     suspend fun getUserChatRooms(username: String): DataState<List<ChatRoom>>
 
     sealed class Endpoints(val url: String) {

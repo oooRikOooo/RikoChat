@@ -13,11 +13,13 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.request.header
 import io.ktor.serialization.kotlinx.json.json
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.qualifier.named
@@ -35,6 +37,10 @@ val networkModule = module {
             }
             install(ContentNegotiation) {
                 json()
+            }
+
+            defaultRequest {
+                header("Authorization", "Bearer ")
             }
         }
     }
@@ -69,7 +75,7 @@ val networkModule = module {
         )
     }
 
-    single<AuthService> { AuthServiceImpl(get(named("RestHttpClient")), get()) }
+    single<AuthService> { AuthServiceImpl(get(named("RestHttpClient"))) }
 
     single<UserService> { UserServiceImpl(get(named("RestHttpClient")), get(), get()) }
 }

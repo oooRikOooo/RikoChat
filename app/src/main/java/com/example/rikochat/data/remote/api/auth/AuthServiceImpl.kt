@@ -1,60 +1,79 @@
 package com.example.rikochat.data.remote.api.auth
 
-import com.example.rikochat.data.remote.mapper.IsUserNameAvailableMapper
-import com.example.rikochat.data.remote.model.rest.isUserNameAvailableResponse.IsUserNameAvailableDto
+import com.example.rikochat.data.remote.model.register.RegisterRequestDao
 import com.example.rikochat.domain.api.auth.AuthService
-import com.example.rikochat.domain.model.isUserNameAvailable.IsUserNameAvailable
-import com.example.rikochat.domain.model.user.User
 import com.example.rikochat.utils.DataState
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.ktx.auth
-import com.google.firebase.auth.ktx.userProfileChangeRequest
 import com.google.firebase.ktx.Firebase
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.tasks.await
 
 class AuthServiceImpl(
-    private val client: HttpClient,
-    private val mapper: IsUserNameAvailableMapper
+    private val client: HttpClient
 ) : AuthService {
-    override suspend fun createAccount(
+
+    override suspend fun register(
         username: String,
         email: String,
         password: String
-    ): DataState<User> {
-
+    ): DataState<Unit> {
         return try {
-            val result = Firebase.auth.createUserWithEmailAndPassword(email, password).await()
+            val registerRequestDto = RegisterRequestDao(
+                email, username, password
+            )
 
-            result.user?.let {
-                val profileUpdates = userProfileChangeRequest {
-                    displayName = username
+            val response = client.post(AuthService.Endpoints.Register.url) {
+                setBody(registerRequestDto)
+            }
+
+            val responseBody: String = response.body()
+
+            when (response.status) {
+                HttpStatusCode.OK -> {
+                    DataState.Success(Unit)
                 }
 
-                it.updateProfile(profileUpdates).await()
+                HttpStatusCode.BadRequest -> {
+                    DataState.Error(responseBody)
+                }
 
-                val user = User(username, it.email ?: email)
+                HttpStatusCode.InternalServerError -> {
+                    DataState.Error(responseBody)
+                }
 
-                Firebase.auth.signOut()
-
-                DataState.Success(user)
-
-            } ?: run {
-                DataState.Error("Internal Error")
+                else -> {
+                    DataState.Error(responseBody)
+                }
             }
-        } catch (e: Exception) {
-            DataState.Error(e.message ?: "InternalError")
+        } catch (ex: Exception) {
+            DataState.Error(ex.message ?: "")
         }
-
     }
+
+
 
     override suspend fun login(email: String, password: String): DataState<FirebaseUser> {
         return try {
             val result = Firebase.auth.signInWithEmailAndPassword(email, password).await()
 
             return result.user?.let {
+                val token = it.getIdToken(true).await().token
+
+                if (token == null) {
+                    FirebaseAuth.getInstance().signOut()
+                    DataState.Error("Internal Error")
+                } else {
+                    client.get(AuthService.Endpoints.Login.url) {
+
+                    }
+                }
                 DataState.Success(it)
             } ?: run {
                 DataState.Error("Internal Error")
@@ -65,26 +84,5 @@ class AuthServiceImpl(
 
     }
 
-    override suspend fun checkIsUserNameAvailable(username: String): DataState<IsUserNameAvailable> {
-        return try {
-            val isUserNameAvailableDto =
-                client.get(AuthService.Endpoints.CheckIsUserNameAvailable.url) {
-                    url {
-                        parameters.append("username", username)
-                    }
-                }.body<IsUserNameAvailableDto>()
 
-            val isUserNameAvailable = mapper.mapFromEntity(isUserNameAvailableDto)
-
-            if (isUserNameAvailable.isUserNameAvailable) {
-                DataState.Success(mapper.mapFromEntity(isUserNameAvailableDto))
-            } else {
-                DataState.Error("Username is not available")
-            }
-
-
-        } catch (e: Exception) {
-            DataState.Error(e.message ?: "")
-        }
-    }
 }
