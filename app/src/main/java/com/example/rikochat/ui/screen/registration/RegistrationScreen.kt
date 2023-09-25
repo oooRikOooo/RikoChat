@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -42,7 +43,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.rikochat.utils.isValidEmail
-import com.example.rikochat.utils.ui.LoadingProgressIndicator
 import com.example.rikochat.utils.ui.ShowSnackBar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,15 +57,18 @@ fun RegistrationScreen(
 
     var passwordVisible by remember { mutableStateOf(false) }
     val localFocusManager = LocalFocusManager.current
+    var isLoading by remember { mutableStateOf(false) }
 
     when (val state = uiState.value) {
         is RegistrationUiState.FailedRegistration -> {
+            isLoading = false
             viewModel.onEvent(RegistrationUiEvent.ShowSnackBar(state.error))
         }
 
         RegistrationUiState.Idle -> {}
 
         RegistrationUiState.SuccessfulRegister -> {
+            isLoading = false
             LaunchedEffect(
                 key1 = Unit,
                 block = {
@@ -75,7 +78,9 @@ fun RegistrationScreen(
 
         }
 
-        RegistrationUiState.Loading -> LoadingProgressIndicator()
+        RegistrationUiState.Loading -> {
+            isLoading = true
+        }
     }
 
     Box(
@@ -235,6 +240,10 @@ fun RegistrationScreen(
                 fontSize = 12.sp
             )
 
+        }
+
+        if (isLoading) {
+            CircularProgressIndicator()
         }
     }
 

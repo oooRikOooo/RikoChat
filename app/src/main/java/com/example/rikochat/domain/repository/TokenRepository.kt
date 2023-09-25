@@ -8,6 +8,7 @@ interface TokenRepository {
 
     suspend fun getAuthToken(): String
 
+    suspend fun observeAuthToken(): kotlinx.coroutines.flow.Flow<String>
 
 
     object TokenPreferencesKeys {

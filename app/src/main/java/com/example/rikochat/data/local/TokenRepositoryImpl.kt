@@ -19,4 +19,11 @@ class TokenRepositoryImpl(private val dataStore: DataStore<Preferences>) : Token
         return dataStore.data.first()[TokenRepository.TokenPreferencesKeys.TOKEN] ?: ""
     }
 
+    override suspend fun observeAuthToken(): Flow<String> {
+        return dataStore.data.map {
+            it[TokenRepository.TokenPreferencesKeys.TOKEN] ?: ""
+        }
+    }
+
+
 }

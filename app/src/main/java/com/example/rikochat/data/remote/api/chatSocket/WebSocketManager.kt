@@ -14,7 +14,6 @@ import com.example.rikochat.utils.DataState
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocketSession
 import io.ktor.client.request.header
-import io.ktor.client.request.url
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
@@ -124,9 +123,13 @@ class WebSocketManager(
     suspend fun sendMessage(message: MessageDto) {
         try {
             val json = Json.encodeToString(message)
+            Log.d("riko", "sendMessage: json: $json")
             val sendMessage = "${ChatSocketAction.SendMessage.name}:$json"
+            Log.d("riko", "sendMessage: sendMessage: $sendMessage")
             socket?.send(Frame.Text(sendMessage))
+            Log.d("riko", "sendMessage: socket send; isSocket null: ${socket == null}")
         } catch (e: Exception) {
+            Log.d("riko", "sendMessage exception: ${e.message}")
             e.printStackTrace()
         }
     }
@@ -237,6 +240,7 @@ class WebSocketManager(
 
     suspend fun closeSession() {
         socket?.close()
+        socket = null
     }
 
 }

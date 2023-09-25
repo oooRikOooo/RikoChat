@@ -16,6 +16,9 @@ fun LoadingProgressIndicator(modifier: Modifier = Modifier) {
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.secondary)
     ) {
-        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        CircularProgressIndicator(
+            modifier = Modifier.align(Alignment.Center),
+            color = MaterialTheme.colorScheme.onPrimary
+        )
     }
 }

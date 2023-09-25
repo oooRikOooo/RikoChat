@@ -26,12 +26,12 @@ android {
     buildTypes {
         debug {
             minifyEnabled false
-            buildConfigField "String", "BASE_URL", "\"ws://192.168.0.106:8080\""
+            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.105:8080\""
             debuggable true
         }
         release {
             minifyEnabled false
-            buildConfigField "String", "BASE_URL", "\"ws://192.168.0.106:8080\""
+            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.105:8080\""
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
 
@@ -102,6 +102,7 @@ dependencies {
     implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0'
 
     // Koin
+    implementation "io.insert-koin:koin-android:3.3.0"
     implementation("io.insert-koin:koin-androidx-compose:3.3.0")
 
     // Ktor
@@ -117,6 +118,7 @@ dependencies {
     implementation "androidx.core:core-ktx:1.10.1"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.6.1"
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.6.1")
+    implementation("androidx.lifecycle:lifecycle-service:2.6.1")
     implementation "androidx.activity:activity-compose:1.7.0"
     implementation "androidx.compose.ui:ui:$compose_version"
     implementation "androidx.compose.ui:ui-tooling-preview:$compose_version"

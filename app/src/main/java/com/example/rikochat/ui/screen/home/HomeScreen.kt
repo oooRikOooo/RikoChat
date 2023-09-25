@@ -1,4 +1,4 @@
-package com.example.rikochat.ui.screen.main
+package com.example.rikochat.ui.screen.home
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -45,7 +45,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,14 +57,11 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.rikochat.R
@@ -75,52 +71,52 @@ import com.example.rikochat.utils.ui.LoadingProgressIndicator
 import kotlinx.coroutines.launch
 
 @Composable
-fun MainScreen(
-    viewModel: MainViewModel,
+fun HomeScreen(
+    viewModel: HomeViewModel,
     navigateToChat: (String) -> Unit,
     navigateToLogin: () -> Unit
 ) {
 
     LaunchedEffect(key1 = Unit, block = {
-        viewModel.onEvent(MainUiEvent.LoadInitialData)
+        viewModel.onEvent(HomeUiEvent.LoadInitialData)
     })
 
-    val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(key1 = lifecycleOwner, effect = {
-        val observer = LifecycleEventObserver { _, event ->
-            when (event) {
-                Lifecycle.Event.ON_CREATE -> {
-                    Log.d("riko", "On Create")
-                    viewModel.connectToWebSocket()
-                }
-
-                Lifecycle.Event.ON_PAUSE -> {}
-                Lifecycle.Event.ON_DESTROY -> {
-                    Log.d("riko", "On Destroy")
-                    viewModel.disconnect()
-                }
-
-                else -> {
-                    Log.d("riko", event.name)
-                }
-            }
-        }
-
-        lifecycleOwner.lifecycle.addObserver(observer)
-
-        onDispose {
-            lifecycleOwner.lifecycle.removeObserver(observer)
-        }
-    })
+//    val lifecycleOwner = LocalLifecycleOwner.current
+//    DisposableEffect(key1 = lifecycleOwner, effect = {
+//        val observer = LifecycleEventObserver { _, event ->
+//            when (event) {
+//                Lifecycle.Event.ON_CREATE -> {
+//                    Log.d("riko", "On Create")
+//                    viewModel.connectToWebSocket()
+//                }
+//
+//                Lifecycle.Event.ON_PAUSE -> {}
+//                Lifecycle.Event.ON_DESTROY -> {
+//                    Log.d("riko", "On Destroy")
+//                    viewModel.disconnect()
+//                }
+//
+//                else -> {
+//                    Log.d("riko", event.name)
+//                }
+//            }
+//        }
+//
+//        lifecycleOwner.lifecycle.addObserver(observer)
+//
+//        onDispose {
+//            lifecycleOwner.lifecycle.removeObserver(observer)
+//        }
+//    })
 
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
 
     when (val state = uiState.value) {
-        is MainUiState.EmptyScreen -> {
+        is HomeUiState.EmptyScreen -> {
             DrawerWithEmptyContent(viewModel = viewModel, currentUser = state.currentUser)
         }
 
-        is MainUiState.Error -> {
+        is HomeUiState.Error -> {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -132,13 +128,13 @@ fun MainScreen(
             }
         }
 
-        MainUiState.Idle -> {}
+        HomeUiState.Idle -> {}
 
-        MainUiState.Loading -> {
+        HomeUiState.Loading -> {
             LoadingProgressIndicator()
         }
 
-        is MainUiState.SuccessLoad -> {
+        is HomeUiState.SuccessLoad -> {
             DrawerWithContent(
                 viewModel = viewModel,
                 chatRooms = state.rooms,
@@ -147,7 +143,7 @@ fun MainScreen(
             )
         }
 
-        MainUiState.UserNotLoggedIn -> {
+        HomeUiState.UserNotLoggedIn -> {
             Log.d("riko", "UserNotLoggedIn")
             navigateToLogin.invoke()
         }
@@ -158,7 +154,7 @@ fun MainScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawerWithContent(
-    viewModel: MainViewModel,
+    viewModel: HomeViewModel,
     chatRooms: List<ChatRoom>,
     user: User,
     navigateToChat: (String) -> Unit
@@ -200,7 +196,7 @@ fun DrawerWithContent(
 
 @Composable
 private fun DrawerWithEmptyContent(
-    viewModel: MainViewModel,
+    viewModel: HomeViewModel,
     currentUser: User
 ) {
     val openDialog = remember { mutableStateOf(false) }
@@ -312,7 +308,7 @@ fun ChatItem(chatRoom: ChatRoom, navigateToChat: (String) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateChatRoomDialog(
-    viewModel: MainViewModel,
+    viewModel: HomeViewModel,
     closeDialog: () -> Unit
 ) {
     AlertDialog(onDismissRequest = { closeDialog() }) {
@@ -335,7 +331,7 @@ fun CreateChatRoomDialog(
                     value = viewModel.dialogChatRoomTitle,
                     onValueChange = {
                         viewModel.onEvent(
-                            MainUiEvent.OnDialogTitleTextChanged(
+                            HomeUiEvent.OnDialogTitleTextChanged(
                                 it
                             )
                         )
@@ -365,7 +361,7 @@ fun CreateChatRoomDialog(
                     modifier = Modifier.align(Alignment.CenterHorizontally),
                     onClick = {
                         if (viewModel.dialogChatRoomTitle.isNotBlank()) {
-                            viewModel.onEvent(MainUiEvent.CreateChatRoom)
+                            viewModel.onEvent(HomeUiEvent.CreateChatRoom)
                             closeDialog()
                         }
 

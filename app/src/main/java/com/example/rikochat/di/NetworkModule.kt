@@ -3,7 +3,6 @@ package com.example.rikochat.di
 import android.util.Log
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
-import com.example.rikochat.data.local.TokenRepositoryImpl
 import com.example.rikochat.data.remote.api.auth.AuthServiceImpl
 import com.example.rikochat.data.remote.api.chatSocket.WebSocketManager
 import com.example.rikochat.data.remote.api.message.RoomServiceImpl
@@ -17,7 +16,6 @@ import io.ktor.client.engine.cio.CIO
 import io.ktor.client.engine.okhttp.OkHttp
 import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
-import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger

@@ -1,184 +1,75 @@
 package com.example.rikochat.ui.screen.main
 
-import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.rikochat.data.remote.api.chatSocket.WebSocketManager
-import com.example.rikochat.domain.model.chatRoom.ChatRoomType
-import com.example.rikochat.domain.usecase.createChatRoom.CreateChatRoomUseCase
-import com.example.rikochat.domain.usecase.getCurrentUser.GetCurrentUserUseCase
-import com.example.rikochat.domain.usecase.getUser.GetUserUseCase
-import com.example.rikochat.domain.usecase.getUserMessages.GetUserChatRoomsUseCase
-import com.example.rikochat.utils.DataState
+import com.example.rikochat.domain.repository.TokenRepository
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class MainViewModel(
-    private val getCurrentUserUseCase: GetCurrentUserUseCase,
-    private val getUserChatRoomsUseCase: GetUserChatRoomsUseCase,
-    private val createChatRoomUseCase: CreateChatRoomUseCase,
+    private val tokenRepository: TokenRepository,
     private val webSocketManager: WebSocketManager
 ) : ViewModel() {
-    private val viewModelState = MutableStateFlow(MainViewModelState())
 
-    val uiState = viewModelState
-        .map(MainViewModelState::toUiState)
-        .stateIn(
-            viewModelScope,
-            SharingStarted.Eagerly,
-            viewModelState.value.toUiState()
-        )
+    private val _state = MutableStateFlow<MainUiState>(MainUiState.Idle)
+    val state = _state.asStateFlow()
 
-    var dialogChatRoomTitle by mutableStateOf("")
-        private set
 
-    var dialogChatRoomTitleError by mutableStateOf("")
-        private set
-
-    var isDialogChatRoomTitleError by mutableStateOf(false)
-
-    fun onEvent(event: MainUiEvent) {
-        when (event) {
-
-            MainUiEvent.LoadInitialData -> {
-                viewModelScope.launch(Dispatchers.IO) {
-                    viewModelState.update {
-                        it.copy(isLoading = true)
-                    }
-
-                    loadInitialDataAsync().await()
-
-                    viewModelState.update {
-                        it.copy(isLoading = false)
-                    }
-                }
-            }
-
-            MainUiEvent.SignOut -> signOut()
-
-            MainUiEvent.CreateChatRoom -> {
-                createChatRoom()
-                dialogChatRoomTitle = ""
-            }
-
-            is MainUiEvent.OnDialogTitleTextChanged -> {
-                dialogChatRoomTitle = event.text
-                if (event.text.isNotBlank()) {
-                    isDialogChatRoomTitleError = false
-                }
-            }
-
-            is MainUiEvent.ShowDialogTitleError -> {
-                dialogChatRoomTitleError = event.text
-                isDialogChatRoomTitleError = true
-            }
-        }
+    init {
+        observeToken()
     }
 
-    fun connectToWebSocket() {
-
-        if (webSocketManager.isWebSocketConnected()) return
-
+    fun openConnection() {
         viewModelScope.launch(Dispatchers.IO) {
-
-            when (val result = webSocketManager.initSession()) {
-                is DataState.Error -> {
-                    viewModelState.update {
-                        it.copy(error = result.message)
-                    }
-                }
-
-                is DataState.Success -> {
-                    webSocketManager.observeIncoming()
-                }
-            }
-
+            if (webSocketManager.isWebSocketConnected())
+                webSocketManager.initSession()
         }
+
     }
 
-
-    fun disconnect() {
+    fun closeConnection() {
         viewModelScope.launch(Dispatchers.IO) {
-            Log.d("riko", "disconnect")
             webSocketManager.closeSession()
         }
     }
 
-    private fun createChatRoom() {
-        viewModelScope.launch {
+    private fun observeToken() {
+        viewModelScope.launch(Dispatchers.Main) {
 
-            val currentUser = viewModelState.value.currentUser!!
+            _state.emit(MainUiState.Loading)
 
-            when (
-                val result = createChatRoomUseCase.invoke(
-                    ownerId = currentUser.uid,
-                    type = ChatRoomType.Group,
-                    chatRoomTitle = dialogChatRoomTitle
-                )
-            ) {
-                is DataState.Error -> {
-                    viewModelState.update {
-                        it.copy(error = result.message)
-                    }
-                }
+            updateToken()
 
-                is DataState.Success -> {
-                    viewModelState.update {
-                        val newList = it.rooms.toMutableList().apply {
-                            add(result.data)
-                        }
+            tokenRepository.observeAuthToken().collect {
+                _state.emit(MainUiState.SuccessTokenFetch(it))
 
-                        it.copy(rooms = newList)
-                    }
+                if (it.isEmpty()) {
+                    closeConnection()
+                } else {
+                    openConnection()
                 }
             }
         }
     }
 
-    private fun CoroutineScope.loadInitialDataAsync() = async {
+    private fun updateToken() {
+        viewModelScope.launch(Dispatchers.IO) {
+            val currentUser = Firebase.auth.currentUser
 
-        val currentUserResult = getCurrentUserUseCase.invoke()
-        val userChatRoomsResult = getUserChatRoomsUseCase.invoke()
+            if (currentUser != null) {
+                val refreshTokenResult = currentUser.getIdToken(true).await()
 
-        viewModelState.update { currentState ->
-            currentState.copy(
-                currentUser = when (currentUserResult) {
-                    is DataState.Error -> currentState.currentUser
-                    is DataState.Success -> currentUserResult.data
-                },
-                rooms = when (userChatRoomsResult) {
-                    is DataState.Error -> currentState.rooms
-                    is DataState.Success -> userChatRoomsResult.data
-                },
-                error = when {
-                    currentUserResult is DataState.Error -> currentUserResult.message
-                    userChatRoomsResult is DataState.Error -> userChatRoomsResult.message
-                    else -> null
+                refreshTokenResult.token?.let {
+                    tokenRepository.updateAuthToken(it)
                 }
-            )
+            }
         }
-    }
 
-    private fun signOut() {
-        Firebase.auth.signOut()
     }
-
-    override fun onCleared() {
-        Log.d("riko", "onCleared")
-        super.onCleared()
-        disconnect()
-    }
-
 }

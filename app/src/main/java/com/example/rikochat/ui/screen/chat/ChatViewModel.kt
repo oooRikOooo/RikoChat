@@ -15,11 +15,9 @@ import com.example.rikochat.domain.usecase.getChatRoom.GetChatRoomUseCase
 import com.example.rikochat.domain.usecase.getChatRoomMembers.GetChatRoomMembersUseCase
 import com.example.rikochat.domain.usecase.getCurrentUser.GetCurrentUserUseCase
 import com.example.rikochat.utils.DataState
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.launchIn
@@ -141,32 +139,54 @@ class ChatViewModel(
     private fun sendMessage(roomId: String) {
         viewModelScope.launch(Dispatchers.IO) {
             if (messageText.value.isNotBlank()) {
-                val username = FirebaseAuth.getInstance().currentUser?.displayName!!
 
-                val message = MessageDto(
-                    id = "",
-                    text = messageText.value,
-                    roomId = roomId,
-                    timestamp = 0,
-                    username = username,
-                    isRead = false,
-                    usernamesWhoLiked = mutableListOf()
-                )
+                when (val result = getCurrentUserUseCase.invoke()) {
+                    is DataState.Error -> {
+                        viewModelState.update {
+                            it.copy(error = "User not resolved")
+                        }
+                    }
 
-                webSocketManager.sendMessage(message)
-                messageText.value = ""
+                    is DataState.Success -> {
+                        val message = MessageDto(
+                            id = "",
+                            text = messageText.value,
+                            roomId = roomId,
+                            timestamp = 0,
+                            username = result.data.username,
+                            isRead = false,
+                            usernamesWhoLiked = mutableListOf()
+                        )
+
+                        webSocketManager.sendMessage(message)
+                        messageText.value = ""
+                    }
+                }
+
+
             }
         }
     }
 
     private fun updateMessageLike(messageId: String) {
         viewModelScope.launch(Dispatchers.IO) {
-            val username = FirebaseAuth.getInstance().currentUser?.displayName!!
 
-            webSocketManager.sendUpdateMessageLike(
-                messageId = messageId,
-                whoLikedUsername = username
-            )
+            when (val result = getCurrentUserUseCase.invoke()) {
+                is DataState.Error -> {
+                    viewModelState.update {
+                        it.copy(error = "User not resolved")
+                    }
+                }
+
+                is DataState.Success -> {
+                    webSocketManager.sendUpdateMessageLike(
+                        messageId = messageId,
+                        whoLikedUsername = result.data.username
+                    )
+                }
+            }
+
+
         }
     }
 

@@ -7,8 +7,8 @@ import com.example.rikochat.data.remote.model.register.RegisterRequestDao
 import com.example.rikochat.data.remote.model.rest.user.UserDto
 import com.example.rikochat.domain.api.auth.AuthService
 import com.example.rikochat.domain.model.user.User
-import com.example.rikochat.domain.repository.TokenRepository
 import com.example.rikochat.domain.repository.CurrentUserRepository
+import com.example.rikochat.domain.repository.TokenRepository
 import com.example.rikochat.utils.DataState
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
@@ -16,9 +16,11 @@ import com.google.firebase.ktx.Firebase
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import kotlinx.coroutines.tasks.await
@@ -84,10 +86,9 @@ class AuthServiceImpl(
                     DataState.Error(ApiErrors.InternalError.errorMessage)
                 } else {
 
-                    tokenRepository.updateAuthToken(token)
-
                     val response = client.get(AuthService.Endpoints.Login.url){
                         contentType(ContentType.Application.Json)
+                        header(HttpHeaders.Authorization, "Bearer $token")
                     }
 
                     when(response.status){
@@ -96,6 +97,8 @@ class AuthServiceImpl(
 
                             val user = userMapper.mapFromEntity(userDto)
 
+                            tokenRepository.updateAuthToken(token)
+
                             currentUserRepository.saveCurrentUser(user)
 
                             DataState.Success(user)
@@ -103,7 +106,6 @@ class AuthServiceImpl(
 
                         HttpStatusCode.NoContent -> {
                             FirebaseAuth.getInstance().signOut()
-                            tokenRepository.updateAuthToken("")
 
                             val errorMessage = response.body<String>()
 
@@ -112,7 +114,6 @@ class AuthServiceImpl(
 
                         HttpStatusCode.Unauthorized -> {
                             FirebaseAuth.getInstance().signOut()
-                            tokenRepository.updateAuthToken("")
 
                             val errorMessage = response.body<String>()
 
@@ -120,7 +121,6 @@ class AuthServiceImpl(
                         }
                         else -> {
                             FirebaseAuth.getInstance().signOut()
-                            tokenRepository.updateAuthToken("")
 
                             DataState.Error(ApiErrors.InternalError.errorMessage)
                         }
@@ -129,14 +129,12 @@ class AuthServiceImpl(
                 }
             } ?: run {
                 FirebaseAuth.getInstance().signOut()
-                tokenRepository.updateAuthToken("")
 
                 Log.d("riko", "AuthServiceImpl login  Firebase User Is Null")
                 DataState.Error(ApiErrors.InternalError.errorMessage)
             }
         } catch (e: Exception) {
             FirebaseAuth.getInstance().signOut()
-            tokenRepository.updateAuthToken("")
 
             Log.d("riko", "AuthServiceImpl login  Exception: ${e.message}")
             DataState.Error(e.message ?: ApiErrors.InternalError.errorMessage)

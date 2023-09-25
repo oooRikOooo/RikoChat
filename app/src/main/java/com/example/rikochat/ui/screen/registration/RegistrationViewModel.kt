@@ -38,7 +38,9 @@ class RegistrationViewModel(
     fun onEvent(event: RegistrationUiEvent) {
         when (event) {
             is RegistrationUiEvent.OnEmailTextChanged -> email = event.text
+
             is RegistrationUiEvent.OnPasswordTextChanged -> password = event.text
+
             RegistrationUiEvent.Register -> {
                 register()
             }

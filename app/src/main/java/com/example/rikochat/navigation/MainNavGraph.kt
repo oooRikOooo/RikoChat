@@ -9,7 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.rikochat.ui.screen.chat.ChatScreen
-import com.example.rikochat.ui.screen.main.MainScreen
+import com.example.rikochat.ui.screen.home.HomeScreen
 import com.example.rikochat.utils.navigation.popUpToInclusive
 import org.koin.androidx.compose.getViewModel
 
@@ -42,7 +42,7 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
         composable(
             route = MainNav.MAIN_HOME_SCREEN
         ) {
-            MainScreen(viewModel = getViewModel(), navigateToChat = { roomId ->
+            HomeScreen(viewModel = getViewModel(), navigateToChat = { roomId ->
                 navController.navigate("chat_screen/$roomId")
             }, navigateToLogin = {
                 navController.navigate(route = AuthNav.AUTH_ROUTE) {
