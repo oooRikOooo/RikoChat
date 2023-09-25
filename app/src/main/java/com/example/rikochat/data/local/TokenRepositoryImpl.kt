@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
 class TokenRepositoryImpl(private val dataStore: DataStore<Preferences>) : TokenRepository {
-    override suspend fun saveAuthToken(token: String) {
+    override suspend fun updateAuthToken(token: String) {
         dataStore.edit {
             it[TokenRepository.TokenPreferencesKeys.TOKEN] = token
         }

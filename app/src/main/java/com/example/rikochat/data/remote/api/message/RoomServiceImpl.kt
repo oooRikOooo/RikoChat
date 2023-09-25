@@ -42,13 +42,9 @@ class RoomServiceImpl(
         }
     }
 
-    override suspend fun getAllUserChatRooms(username: String): DataState<List<ChatRoom>> {
+    override suspend fun getAllUserChatRooms(): DataState<List<ChatRoom>> {
 
-        val response = client.get(RoomService.Endpoints.GetAllUserChatRooms.url) {
-            url {
-                parameters.append("username", username)
-            }
-        }
+        val response = client.get(RoomService.Endpoints.GetAllUserChatRooms.url)
 
         return try {
             if (response.status == HttpStatusCode.OK) {
@@ -170,10 +166,10 @@ class RoomServiceImpl(
         }
     }
 
-    override suspend fun deleteUserFromChatRoom(username: String, roomId: String): DataState<Unit> {
+    override suspend fun deleteUserFromChatRoom(userId: String, roomId: String): DataState<Unit> {
         val response = client.delete(RoomService.Endpoints.DeleteUserFromChatRoom.url) {
             url {
-                parameters.append("username", username)
+                parameters.append("userId", userId)
                 parameters.append("roomId", roomId)
             }
         }

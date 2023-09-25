@@ -5,6 +5,7 @@ import com.example.rikochat.domain.model.message.Message
 import com.example.rikochat.domain.model.user.User
 
 data class ChatViewModelState(
+    val currentUser: User? = null,
     val messages: List<Message>? = null,
     val chatRoom: ChatRoom? = null,
     val chatRoomMembers: List<User> = emptyList(),
@@ -15,13 +16,22 @@ data class ChatViewModelState(
 
         if (isLoading) return ChatUiState.Loading
 
-        if (chatRoom == null || error != null) {
+        if (chatRoom == null || error != null || currentUser == null) {
             return ChatUiState.FailureLoad
         }
 
         return if (messages.isNullOrEmpty())
-            ChatUiState.EmptyChat(chatRoom, chatRoomMembers)
+            ChatUiState.EmptyChat(
+                currentUser = currentUser,
+                chatRoom = chatRoom,
+                chatRoomMembers = chatRoomMembers
+            )
         else
-            ChatUiState.SuccessLoad(messages, chatRoom, chatRoomMembers)
+            ChatUiState.SuccessLoad(
+                currentUser = currentUser,
+                messages = messages,
+                chatRoom = chatRoom,
+                chatRoomMembers = chatRoomMembers
+            )
     }
 }

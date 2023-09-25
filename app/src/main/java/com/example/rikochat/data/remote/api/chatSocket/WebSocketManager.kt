@@ -9,10 +9,15 @@ import com.example.rikochat.data.remote.model.rest.user.UserDto
 import com.example.rikochat.domain.api.chatSocket.ChatSocketService
 import com.example.rikochat.domain.model.message.Message
 import com.example.rikochat.domain.model.user.User
+import com.example.rikochat.domain.repository.TokenRepository
 import com.example.rikochat.utils.DataState
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.webSocketSession
+import io.ktor.client.request.header
 import io.ktor.client.request.url
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.contentType
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
@@ -29,6 +34,7 @@ import kotlinx.serialization.json.Json
 
 class WebSocketManager(
     private val client: HttpClient,
+    private val tokenRepository: TokenRepository,
     private val messageMapper: MessageMapper,
     private val chatRoomMapper: ChatRoomMapper,
     private val userMapper: UserMapper
@@ -46,18 +52,29 @@ class WebSocketManager(
     val updateChatRoomMembersFlow: Flow<List<User>> = _updateChatRoomMembersFlow.asSharedFlow()
 
 
-    suspend fun initSession(username: String): DataState<Unit> {
+    suspend fun initSession(): DataState<Unit> {
         return try {
-            socket = client.webSocketSession {
-                url("${ChatSocketService.Endpoints.ChatSocket.url}?username=$username")
+            Log.d("riko", "initSession")
+            val token = tokenRepository.getAuthToken()
+
+            if (token.isEmpty()) DataState.Error("Token is empty")
+
+            Log.d("riko", "initSession socket")
+            socket = client.webSocketSession(ChatSocketService.Endpoints.ChatSocket.url) {
+                contentType(ContentType.Application.Json)
+                header(HttpHeaders.Authorization, "Bearer $token")
             }
 
             if (socket?.isActive == true) {
+                Log.d("riko", "initSession Success")
                 DataState.Success(Unit)
-            } else
+            } else {
+                Log.d("riko", "initSession Error Couldn't establish connection")
                 DataState.Error("Couldn't establish connection")
+            }
         } catch (e: Exception) {
             e.printStackTrace()
+            Log.d("riko", "initSession Error ${e.message}")
             DataState.Error(e.localizedMessage ?: "Unexpected error")
         }
     }

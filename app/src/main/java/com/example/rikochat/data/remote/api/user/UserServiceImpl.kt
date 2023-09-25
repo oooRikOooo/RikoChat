@@ -1,5 +1,6 @@
 package com.example.rikochat.data.remote.api.user
 
+import android.util.Log
 import com.example.rikochat.data.remote.api.NO_USER_FOUND
 import com.example.rikochat.data.remote.mapper.ChatRoomMapper
 import com.example.rikochat.data.remote.mapper.UserMapper
@@ -12,7 +13,9 @@ import com.example.rikochat.utils.DataState
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.contentType
 
 class UserServiceImpl(
     private val client: HttpClient,
@@ -53,32 +56,39 @@ class UserServiceImpl(
 
     }
 
-    override suspend fun getUserChatRooms(username: String): DataState<List<ChatRoom>> {
-        val response = client.get(UserService.Endpoints.UserRooms.url) {
-            url {
-                parameters.append("username", username)
-            }
-        }
+    override suspend fun getUserChatRooms(): DataState<List<ChatRoom>> {
 
         return try {
+            Log.d("riko", "getUserChatRooms")
+            val response = client.get(UserService.Endpoints.UserRooms.url){
+                contentType(ContentType.Application.Json)
+            }
+
+            Log.d("riko", "getUserChatRooms return")
+
             when (response.status) {
                 HttpStatusCode.OK -> {
                     val roomsDto = response.body<List<ChatRoomDto>>()
 
                     val rooms = chatRoomMapper.mapFromEntityList(roomsDto)
 
+                    Log.d("riko", "getUserChatRooms OK")
                     DataState.Success(rooms)
                 }
 
                 HttpStatusCode.Unauthorized -> {
+                    Log.d("riko", "getUserChatRooms Unauthorized")
                     DataState.Error(NO_USER_FOUND)
                 }
 
                 else -> {
-                    DataState.Error(response.body())
+                    val error: String = response.body()
+                    Log.d("riko", "getUserChatRooms else: $error")
+                    DataState.Error(error)
                 }
             }
         } catch (e: Exception) {
+            Log.d("riko", "getUserChatRooms else: ${e.message}")
             e.printStackTrace()
             DataState.Error(e.localizedMessage ?: "InternalError")
         }

@@ -8,14 +8,16 @@ class UserMapper : BaseMapper<User, UserDto> {
 
         return User(
             username = dto.username,
-            email = dto.email
+            email = dto.email,
+            uid = dto.uid
         )
     }
 
     override fun mapToEntity(model: User): UserDto {
         return UserDto(
             username = model.username,
-            email = model.email
+            email = model.email,
+            uid = model.uid
         )
     }
 

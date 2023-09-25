@@ -1,5 +1,6 @@
 package com.example.rikochat.ui.screen.login
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,11 +14,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -39,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.rikochat.utils.ui.LoadingProgressIndicator
 import com.example.rikochat.utils.ui.ShowSnackBar
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     viewModel: LoginViewModel,
@@ -70,11 +76,13 @@ fun LoginScreen(
 
     Box(
         modifier = Modifier
+            .background(MaterialTheme.colorScheme.primary)
             .padding(50.dp)
             .fillMaxSize()
     ) {
         Column(
             modifier = Modifier
+                .background(MaterialTheme.colorScheme.primary)
                 .padding(bottom = 10.dp)
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterVertically),
@@ -94,6 +102,15 @@ fun LoginScreen(
                     }
                 ),
                 singleLine = true,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.secondaryContainer,
+                    focusedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.secondaryContainer,
+                    cursorColor = MaterialTheme.colorScheme.onPrimary,
+                    focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedTextColor = MaterialTheme.colorScheme.secondaryContainer
+                )
             )
 
             OutlinedTextField(
@@ -116,7 +133,7 @@ fun LoginScreen(
                     else "Show password"
 
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(imageVector = icon, description)
+                        Icon(imageVector = icon, description, tint = MaterialTheme.colorScheme.secondaryContainer)
                     }
 
                 },
@@ -130,6 +147,15 @@ fun LoginScreen(
                     }
                 ),
                 singleLine = true,
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.secondaryContainer,
+                    focusedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedLabelColor = MaterialTheme.colorScheme.secondaryContainer,
+                    cursorColor = MaterialTheme.colorScheme.onPrimary,
+                    focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+                    unfocusedTextColor = MaterialTheme.colorScheme.secondaryContainer
+                )
             )
         }
 
@@ -141,7 +167,10 @@ fun LoginScreen(
         ) {
             Button(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { viewModel.onEvent(LoginUiEvent.Login) }
+                onClick = { viewModel.onEvent(LoginUiEvent.Login) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
             ) {
                 Text(text = "Login")
             }

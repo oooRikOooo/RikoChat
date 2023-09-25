@@ -8,8 +8,8 @@ class GetUserChatRoomsUseCase(
     private val userService: UserService
 ) {
 
-    suspend operator fun invoke(username: String): DataState<List<ChatRoom>> {
-        return userService.getUserChatRooms(username)
+    suspend operator fun invoke(): DataState<List<ChatRoom>> {
+        return userService.getUserChatRooms()
     }
 
 }

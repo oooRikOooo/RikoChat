@@ -1,5 +1,6 @@
 package com.example.rikochat.di
 
+import android.util.Log
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.example.rikochat.data.local.TokenRepositoryImpl
@@ -14,6 +15,7 @@ import com.example.rikochat.domain.repository.TokenRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.cio.CIO
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.DefaultRequest
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.DEFAULT
@@ -22,6 +24,7 @@ import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.request.header
+import io.ktor.http.HttpHeaders
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.runBlocking
 import org.koin.android.ext.koin.androidContext
@@ -42,15 +45,16 @@ val networkModule = module {
                 json()
             }
 
-            defaultRequest {
-                    val repository = get<TokenRepository>()
-                    val token = runBlocking { repository.getAuthToken() }
+            install(DefaultRequest) {
+                val repository = get<TokenRepository>()
+                val token = runBlocking { repository.getAuthToken() }
 
-                    if (token.isNotEmpty()){
-                        header("Authorization", "Bearer $token")
-                    }
+                Log.d("riko", "defaultRequest: token: $token")
 
-
+                if (token.isNotEmpty()) {
+                    Log.d("riko", "defaultRequest: token is not empty: $token")
+                    header(HttpHeaders.Authorization, "Bearer $token")
+                }
             }
         }
     }
@@ -81,11 +85,12 @@ val networkModule = module {
             get(named("WebSocketsHttpClient")),
             get(),
             get(),
+            get(),
             get()
         )
     }
 
-    single<AuthService> { AuthServiceImpl(get(named("RestHttpClient")), get(), get()) }
+    single<AuthService> { AuthServiceImpl(get(named("RestHttpClient")), get(), get(), get()) }
 
     single<UserService> { UserServiceImpl(get(named("RestHttpClient")), get(), get()) }
 }

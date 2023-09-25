@@ -10,7 +10,7 @@ class CreateChatRoomUseCase(
     private val roomService: RoomService
 ) {
     suspend operator fun invoke(
-        username: String,
+        ownerId: String,
         type: ChatRoomType,
         chatRoomTitle: String
     ): DataState<ChatRoom> {
@@ -18,7 +18,7 @@ class CreateChatRoomUseCase(
         val requestBody = CreateChatRoomRequestBody(
             title = chatRoomTitle,
             type = type.name,
-            ownerUsername = username
+            ownerId = ownerId
         )
         return roomService.createChatRoom(requestBody)
     }

@@ -9,6 +9,6 @@ data class CreateChatRoomRequestBody(
     val title: String,
     @SerialName("type")
     val type: String,
-    @SerialName("username")
-    val ownerUsername: String
+    @SerialName("ownerId")
+    val ownerId: String
 )

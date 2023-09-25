@@ -10,7 +10,7 @@ import org.koin.dsl.module
 
 val viewModelModule = module {
     viewModel { SelectUserNameViewModel() }
-    viewModel { ChatViewModel(get(), get(), get(), get(), get()) }
+    viewModel { ChatViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { RegistrationViewModel(get()) }
     viewModel { LoginViewModel(get(), get()) }
     viewModel { MainViewModel(get(), get(), get(), get()) }

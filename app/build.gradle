@@ -26,12 +26,12 @@ android {
     buildTypes {
         debug {
             minifyEnabled false
-            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.105:8080\""
+            buildConfigField "String", "BASE_URL", "\"ws://192.168.0.106:8080\""
             debuggable true
         }
         release {
             minifyEnabled false
-            buildConfigField "String", "BASE_URL", "\"ws://192.168.88.105:8080\""
+            buildConfigField "String", "BASE_URL", "\"ws://192.168.0.106:8080\""
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
 

@@ -5,6 +5,7 @@ import com.example.rikochat.domain.usecase.createAccount.RegisterUseCase
 import com.example.rikochat.domain.usecase.createChatRoom.CreateChatRoomUseCase
 import com.example.rikochat.domain.usecase.getChatRoom.GetChatRoomUseCase
 import com.example.rikochat.domain.usecase.getChatRoomMembers.GetChatRoomMembersUseCase
+import com.example.rikochat.domain.usecase.getCurrentUser.GetCurrentUserUseCase
 import com.example.rikochat.domain.usecase.getUser.GetUserUseCase
 import com.example.rikochat.domain.usecase.getUserMessages.GetUserChatRoomsUseCase
 import com.example.rikochat.domain.usecase.loginUser.LoginUserUseCase
@@ -19,4 +20,5 @@ val useCaseModule = module {
     factory { AddUserToGroupChatUseCase(get()) }
     factory { GetChatRoomUseCase(get()) }
     factory { GetChatRoomMembersUseCase(get()) }
+    factory { GetCurrentUserUseCase(get()) }
 }

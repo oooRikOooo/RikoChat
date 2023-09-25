@@ -47,7 +47,6 @@ import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -70,23 +69,20 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.rikochat.R
-import com.example.rikochat.data.remote.api.NO_USER_FOUND
 import com.example.rikochat.domain.model.chatRoom.ChatRoom
 import com.example.rikochat.domain.model.user.User
 import com.example.rikochat.utils.ui.LoadingProgressIndicator
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
-    navigateToChat: (String, String) -> Unit,
+    navigateToChat: (String) -> Unit,
     navigateToLogin: () -> Unit
 ) {
 
     LaunchedEffect(key1 = Unit, block = {
-        viewModel.onEvent(MainUiEvent.LoadUser)
+        viewModel.onEvent(MainUiEvent.LoadInitialData)
     })
 
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -117,73 +113,60 @@ fun MainScreen(
         }
     })
 
-    val userUiState = viewModel.user.collectAsStateWithLifecycle()
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
 
-    val drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    when (val state = uiState.value) {
+        is MainUiState.EmptyScreen -> {
+            DrawerWithEmptyContent(viewModel = viewModel, currentUser = state.currentUser)
+        }
 
-    when (val state = userUiState.value) {
-        is MainUserUiState.Error -> {
+        is MainUiState.Error -> {
             Box(
                 modifier = Modifier
-                    .fillMaxSize(), contentAlignment = Alignment.Center
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.secondary),
+                contentAlignment = Alignment.Center
             ) {
-                Text(text = "Something went wrong")
+                Text(text = state.message)
+
             }
         }
 
-        MainUserUiState.Idle -> {}
+        MainUiState.Idle -> {}
 
-        MainUserUiState.Loading -> LoadingProgressIndicator()
-
-        is MainUserUiState.SuccessfulLoad -> {
-            LaunchedEffect(
-                key1 = Unit,
-                block = {
-                    viewModel.onEvent(MainUiEvent.LoadUserChatRooms)
-                }
-            )
-
-            DrawerWithContent(viewModel, drawerState, uiState, state.user, navigateToChat)
+        MainUiState.Loading -> {
+            LoadingProgressIndicator()
         }
 
-        MainUserUiState.UserNotFound -> {
-            NoUserFoundScreen(navigateToLogin = navigateToLogin)
+        is MainUiState.SuccessLoad -> {
+            DrawerWithContent(
+                viewModel = viewModel,
+                chatRooms = state.rooms,
+                user = state.currentUser,
+                navigateToChat = navigateToChat
+            )
+        }
+
+        MainUiState.UserNotLoggedIn -> {
+            Log.d("riko", "UserNotLoggedIn")
+            navigateToLogin.invoke()
         }
     }
 
-//    Column(
-//        modifier = Modifier.fillMaxSize(),
-//        verticalArrangement = Arrangement.Center,
-//        horizontalAlignment = Alignment.CenterHorizontally
-//    ) {
-//        Button(
-//            onClick = { Firebase.auth.signOut() }
-//        ) {
-//            Text(text = "Logout")
-//        }
-//
-//        Button(onClick = {
-//            Firebase.auth.currentUser?.displayName?.let(navigateToChat)
-//        }) {
-//            Text(text = "Join Chat")
-//        }
-//
-//
-//    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DrawerWithContent(
     viewModel: MainViewModel,
-    drawerState: DrawerState,
-    uiState: State<MainUiState>,
+    chatRooms: List<ChatRoom>,
     user: User,
-    navigateToChat: (String, String) -> Unit
+    navigateToChat: (String) -> Unit
 ) {
 
     val openDialog = remember { mutableStateOf(false) }
+
+    val drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
 
     ModalNavigationDrawer(drawerContent = {
         DrawerContent(user = user)
@@ -197,75 +180,62 @@ fun DrawerWithContent(
                 )
             }
         ) { paddingValues ->
-            when (val state = uiState.value) {
-                MainUiState.EmptyScreen -> {
-                    Scaffold(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        floatingActionButton = {
-                            FloatingActionButton(
-                                onClick = {
-                                    openDialog.value = true
-                                }
-                            ) {
-                                Icon(Icons.Filled.Add, "Create Chat Room")
-                            }
-                        }
-                    ) { innerPaddingValues ->
-                        Box(
-                            modifier = Modifier
-                                .padding(paddingValues)
-                                .padding(innerPaddingValues)
-                                .fillMaxSize(), contentAlignment = Alignment.Center
-                        ) {
-                            Text(text = "No chats... :(")
-                        }
+            MainContent(
+                paddingValues = paddingValues,
+                items = chatRooms,
+                navigateToChat = navigateToChat,
+                openCreateChatRoomDialog = { openDialog.value = it }
+            )
 
-                        if (openDialog.value) {
-                            CreateChatRoomDialog(
-                                viewModel = viewModel,
-                                closeDialog = { openDialog.value = false }
-                            )
-                        }
+            if (openDialog.value) {
+                CreateChatRoomDialog(
+                    viewModel = viewModel,
+                    closeDialog = { openDialog.value = false }
+                )
+            }
+        }
+    }
+
+}
+
+@Composable
+private fun DrawerWithEmptyContent(
+    viewModel: MainViewModel,
+    currentUser: User
+) {
+    val openDialog = remember { mutableStateOf(false) }
+
+    val drawerState: DrawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+
+    ModalNavigationDrawer(drawerContent = {
+        DrawerContent(user = currentUser)
+    }, drawerState = drawerState) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.secondary,
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        openDialog.value = true
                     }
-                }
-
-                is MainUiState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .padding(paddingValues)
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.secondary),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = state.message)
-
-                    }
-                }
-
-                MainUiState.Idle -> {}
-
-                MainUiState.Loading -> {
-                    LoadingProgressIndicator(Modifier.padding(paddingValues))
-                }
-
-                is MainUiState.SuccessLoad -> {
-                    MainContent(
-                        user = user,
-                        paddingValues = paddingValues,
-                        items = state.rooms,
-                        navigateToChat = navigateToChat,
-                        openCreateChatRoomDialog = { openDialog.value = it }
-                    )
-
-                    if (openDialog.value) {
-                        CreateChatRoomDialog(
-                            viewModel = viewModel,
-                            closeDialog = { openDialog.value = false }
-                        )
-                    }
+                ) {
+                    Icon(Icons.Filled.Add, "Create Chat Room")
                 }
             }
+        ) { innerPaddingValues ->
+            Box(
+                modifier = Modifier
+                    .padding(innerPaddingValues)
+                    .fillMaxSize(), contentAlignment = Alignment.Center
+            ) {
+                Text(text = "No chats... :(")
+            }
 
+            if (openDialog.value) {
+                CreateChatRoomDialog(
+                    viewModel = viewModel,
+                    closeDialog = { openDialog.value = false }
+                )
+            }
         }
     }
 
@@ -273,11 +243,10 @@ fun DrawerWithContent(
 
 @Composable
 fun MainContent(
-    user: User,
     paddingValues: PaddingValues,
     items: List<ChatRoom>,
     openCreateChatRoomDialog: (Boolean) -> Unit,
-    navigateToChat: (String, String) -> Unit
+    navigateToChat: (String) -> Unit
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.secondary,
@@ -300,7 +269,7 @@ fun MainContent(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             itemsIndexed(items) { index, item ->
-                ChatItem(user = user, chatRoom = item, navigateToChat = navigateToChat)
+                ChatItem(chatRoom = item, navigateToChat = navigateToChat)
 
                 if (index < items.lastIndex)
                     Divider(
@@ -316,12 +285,12 @@ fun MainContent(
 }
 
 @Composable
-fun ChatItem(user: User, chatRoom: ChatRoom, navigateToChat: (String, String) -> Unit) {
+fun ChatItem(chatRoom: ChatRoom, navigateToChat: (String) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(10.dp)
-            .clickable { navigateToChat(user.username, chatRoom.id) },
+            .clickable { navigateToChat(chatRoom.id) },
         horizontalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         AsyncImage(
@@ -409,28 +378,6 @@ fun CreateChatRoomDialog(
         }
     }
 
-}
-
-@Composable
-fun NoUserFoundScreen(navigateToLogin: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.secondary),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(text = NO_USER_FOUND)
-
-        Button(
-            onClick = {
-                navigateToLogin()
-                Firebase.auth.signOut()
-            }
-        ) {
-            Text(text = "Logout")
-        }
-    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

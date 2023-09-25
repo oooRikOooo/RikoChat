@@ -13,6 +13,7 @@ import com.example.rikochat.domain.model.message.Message
 import com.example.rikochat.domain.usecase.addUserToGroupChat.AddUserToGroupChatUseCase
 import com.example.rikochat.domain.usecase.getChatRoom.GetChatRoomUseCase
 import com.example.rikochat.domain.usecase.getChatRoomMembers.GetChatRoomMembersUseCase
+import com.example.rikochat.domain.usecase.getCurrentUser.GetCurrentUserUseCase
 import com.example.rikochat.utils.DataState
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
@@ -31,6 +32,7 @@ import kotlinx.coroutines.launch
 class ChatViewModel(
     private val roomService: RoomService,
     private val webSocketManager: WebSocketManager,
+    private val getCurrentUserUseCase: GetCurrentUserUseCase,
     private val getChatRoomUseCase: GetChatRoomUseCase,
     private val getChatRoomMembersUseCase: GetChatRoomMembersUseCase,
     private val addUserToGroupChatUseCase: AddUserToGroupChatUseCase
@@ -75,11 +77,7 @@ class ChatViewModel(
                         it.copy(isLoading = true)
                     }
 
-                    awaitAll(
-                        getChatRoomInfoAsync(event.roomId),
-                        getChatRoomMembersAsync(event.roomId),
-                        getAllRoomMessagesAsync(event.roomId)
-                    )
+                    getChatRoomInfo(event.roomId).await()
 
                     viewModelState.update {
                         it.copy(isLoading = false)
@@ -172,65 +170,99 @@ class ChatViewModel(
         }
     }
 
-    private fun CoroutineScope.getAllRoomMessagesAsync(roomId: String) = async {
+    private fun CoroutineScope.getChatRoomInfo(roomId: String) = async {
+        val currentUserResult = getCurrentUserUseCase.invoke()
+        val messagesResult = roomService.getAllChatRoomMessages(roomId)
+        val chatRoomInfoResult = getChatRoomUseCase.invoke(roomId)
+        val chatRoomMembersResult = getChatRoomMembersUseCase.invoke(roomId)
 
-        when (val result = roomService.getAllChatRoomMessages(roomId)) {
-            is DataState.Error -> {
-                viewModelState.update {
-                    it.copy(error = result.message)
+        viewModelState.update { currentState ->
+            currentState.copy(
+                currentUser = when(currentUserResult){
+                    is DataState.Error -> currentState.currentUser
+                    is DataState.Success -> currentUserResult.data
+                },
+                messages = when(messagesResult){
+                    is DataState.Error -> currentState.messages
+                    is DataState.Success -> messagesResult.data
+                },
+                chatRoom = when(chatRoomInfoResult) {
+                    is DataState.Error -> currentState.chatRoom
+                    is DataState.Success -> chatRoomInfoResult.data
+                },
+                chatRoomMembers = when(chatRoomMembersResult){
+                    is DataState.Error -> currentState.chatRoomMembers
+                    is DataState.Success -> chatRoomMembersResult.data
+                },
+                error = when {
+                    currentUserResult is DataState.Error -> currentUserResult.message
+                    messagesResult is DataState.Error -> messagesResult.message
+                    chatRoomInfoResult is DataState.Error -> chatRoomInfoResult.message
+                    chatRoomMembersResult is DataState.Error -> chatRoomMembersResult.message
+                    else -> null
                 }
-            }
 
-            is DataState.Success -> {
-                if (result.data.isEmpty()) {
-                    viewModelState.update {
-                        it.copy(messages = emptyList())
-                    }
-                } else {
-                    viewModelState.update {
-                        it.copy(messages = result.data)
-                    }
-                }
-            }
+            )
         }
-        Log.d("riko", "getAllRoomMessagesAsync")
+
         observeMessages(roomId)
         observeChatRoomMembers()
         observeUpdateMessage(roomId)
-//        observeRoomDetailsChanges(roomId)
     }
 
-    private fun CoroutineScope.getChatRoomInfoAsync(roomId: String) = async {
-        when (val result = getChatRoomUseCase.invoke(roomId)) {
-            is DataState.Error -> {
-                viewModelState.update {
-                    it.copy(error = result.message)
-                }
-            }
+//    private fun CoroutineScope.getAllRoomMessagesAsync(roomId: String) = async {
+//
+//        when (val result = roomService.getAllChatRoomMessages(roomId)) {
+//            is DataState.Error -> {
+//                viewModelState.update {
+//                    it.copy(error = result.message)
+//                }
+//            }
+//
+//            is DataState.Success -> {
+//                viewModelState.update {
+//                    it.copy(messages = result.data)
+//                }
+//            }
+//        }
+//        Log.d("riko", "getAllRoomMessagesAsync")
+//        observeMessages(roomId)
+//        observeChatRoomMembers()
+//        observeUpdateMessage(roomId)
+////        observeRoomDetailsChanges(roomId)
+//    }
 
-            is DataState.Success -> {
-                viewModelState.update {
-                    it.copy(chatRoom = result.data)
-                }
-            }
-        }
-    }
+//    private fun CoroutineScope.getChatRoomInfoAsync(roomId: String) = async {
+//        when (val result = getChatRoomUseCase.invoke(roomId)) {
+//            is DataState.Error -> {
+//                viewModelState.update {
+//                    it.copy(error = result.message)
+//                }
+//            }
+//
+//            is DataState.Success -> {
+//                viewModelState.update {
+//                    it.copy(chatRoom = result.data)
+//                }
+//            }
+//        }
+//    }
 
-    private fun CoroutineScope.getChatRoomMembersAsync(roomId: String) = async {
-        when (val result = getChatRoomMembersUseCase.invoke(roomId)) {
-            is DataState.Error -> {
-                viewModelState.update {
-                    it.copy(error = result.message)
-                }
-            }
-
-            is DataState.Success -> {
-                viewModelState.update {
-                    it.copy(chatRoomMembers = result.data)
-                }
-            }
-        }
-    }
+//    private fun CoroutineScope.getChatRoomMembersAsync(roomId: String) = async {
+//        when (val result = getChatRoomMembersUseCase.invoke(roomId)) {
+//            is DataState.Error -> {
+//                viewModelState.update {
+//                    it.copy(error = result.message)
+//                }
+//            }
+//
+//            is DataState.Success -> {
+//                viewModelState.update {
+//                    it.copy(chatRoomMembers = result.data)
+//                }
+//            }
+//        }
+//    }
 
     private fun observeMessages(roomId: String) {
         webSocketManager.newMessageFlow.onEach { message ->

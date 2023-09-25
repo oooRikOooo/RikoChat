@@ -1,6 +1,5 @@
 package com.example.rikochat.ui.screen.chat
 
-import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -73,7 +72,6 @@ import com.example.rikochat.domain.model.user.User
 
 @Composable
 fun ChatScreen(
-    username: String,
     roomId: String,
     viewModel: ChatViewModel
 ) {
@@ -81,7 +79,6 @@ fun ChatScreen(
     LaunchedEffect(
         key1 = roomId,
         block = {
-            Log.d("riko", "LaunchedEffect")
             viewModel.onEvent(ChatUiEvent.LoadRoomInfo(roomId))
         }
     )
@@ -94,7 +91,7 @@ fun ChatScreen(
 
         is ChatUiState.EmptyChat -> {
             EmptyChatContent(
-                username = username,
+                currentUser = stateData.currentUser,
                 chatRoom = stateData.chatRoom,
                 chatRoomMembers = stateData.chatRoomMembers,
                 messageText = viewModel.messageText.value,
@@ -132,8 +129,8 @@ fun ChatScreen(
             ChatSuccessLoadContent(
                 chatRoom = stateData.chatRoom,
                 chatRoomMembers = stateData.chatRoomMembers,
-                messages = stateData.data,
-                username = username,
+                messages = stateData.messages,
+                currentUser = stateData.currentUser,
                 messageText = viewModel.messageText.value,
                 onMessageChange = {
                     viewModel.onEvent(ChatUiEvent.OnMessageChanged(it))
@@ -158,7 +155,7 @@ fun ChatScreen(
 
 @Composable
 fun EmptyChatContent(
-    username: String,
+    currentUser: User,
     chatRoom: ChatRoom,
     chatRoomMembers: List<User>,
     messageText: String,
@@ -172,7 +169,7 @@ fun EmptyChatContent(
             when (chatRoom.type) {
                 ChatRoomType.Direct -> {
                     val user = chatRoomMembers.first {
-                        it.username != username
+                        it.username != currentUser.username
                     }
 
                     DirectChatTopBar(user = user, addUserToChatRoom = addUserToChatRoom)
@@ -225,7 +222,7 @@ private fun ChatSuccessLoadContent(
     chatRoom: ChatRoom,
     chatRoomMembers: List<User>,
     messages: List<Message>,
-    username: String,
+    currentUser: User,
     messageText: String,
     onMessageChange: (String) -> Unit,
     sendMessage: () -> Unit,
@@ -242,7 +239,7 @@ private fun ChatSuccessLoadContent(
             when (chatRoom.type) {
                 ChatRoomType.Direct -> {
                     val user = chatRoomMembers.first {
-                        it.username != username
+                        it.username != currentUser.username
                     }
 
                     DirectChatTopBar(user = user, addUserToChatRoom = addUserToChatRoom)
@@ -278,7 +275,7 @@ private fun ChatSuccessLoadContent(
                     messages[index].id
                 }) { index, message ->
                     val isOwnMessage = remember {
-                        message.username == username
+                        message.username == currentUser.username
                     }
 
                     val isMessageFirstOfDay = remember(messages) {

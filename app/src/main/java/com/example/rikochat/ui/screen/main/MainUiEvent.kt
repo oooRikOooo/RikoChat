@@ -8,9 +8,7 @@ sealed class MainUiEvent {
 
     object CreateChatRoom : MainUiEvent()
 
-    object LoadUserChatRooms : MainUiEvent()
-
-    object LoadUser : MainUiEvent()
+    object LoadInitialData : MainUiEvent()
 
     object SignOut : MainUiEvent()
 }

@@ -11,7 +11,7 @@ interface RoomService {
 
     suspend fun getAllChatRoomMessages(roomId: String): DataState<List<Message>>
 
-    suspend fun getAllUserChatRooms(username: String): DataState<List<ChatRoom>>
+    suspend fun getAllUserChatRooms(): DataState<List<ChatRoom>>
 
     suspend fun createChatRoom(requestBody: CreateChatRoomRequestBody): DataState<ChatRoom>
 
@@ -21,7 +21,7 @@ interface RoomService {
 
     suspend fun addUserToChatRoom(username: String, roomId: String): DataState<Unit>
 
-    suspend fun deleteUserFromChatRoom(username: String, roomId: String): DataState<Unit>
+    suspend fun deleteUserFromChatRoom(userId: String, roomId: String): DataState<Unit>
 
     sealed class Endpoints(val url: String) {
         object GetAllChatRoomMessages : Endpoints("$BASE_URL/room/messages")

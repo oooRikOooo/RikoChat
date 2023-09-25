@@ -11,12 +11,14 @@ sealed class ChatUiState {
     object Loading : ChatUiState()
 
     data class SuccessLoad(
-        val data: List<Message>,
+        val currentUser: User,
+        val messages: List<Message>,
         val chatRoom: ChatRoom,
         val chatRoomMembers: List<User>
     ) : ChatUiState()
 
     data class EmptyChat(
+        val currentUser: User,
         val chatRoom: ChatRoom,
         val chatRoomMembers: List<User>
     ) : ChatUiState()
