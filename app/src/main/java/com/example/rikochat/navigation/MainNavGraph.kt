@@ -1,5 +1,6 @@
 package com.example.rikochat.navigation
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.navigation.NavController
@@ -36,19 +37,27 @@ fun NavGraphBuilder.mainNavGraph(navController: NavController) {
             },
         ) {
             val roomId = it.arguments?.getString("roomId")
-            ChatScreen(viewModel = getViewModel(), roomId = roomId!!)
+            ChatScreen(
+                viewModel = getViewModel(),
+                roomId = roomId!!
+            )
         }
 
         composable(
             route = MainNav.MAIN_HOME_SCREEN
         ) {
-            HomeScreen(viewModel = getViewModel(), navigateToChat = { roomId ->
-                navController.navigate("chat_screen/$roomId")
-            }, navigateToLogin = {
-                navController.navigate(route = AuthNav.AUTH_ROUTE) {
-                    popUpToInclusive(MainNav.MAIN_HOME_SCREEN)
+            Log.d("riko", "composable HOME SCREEN")
+            HomeScreen(
+                viewModel = getViewModel(),
+                navigateToChat = { roomId ->
+                    navController.navigate("chat_screen/$roomId")
+                },
+                navigateToLogin = {
+                    navController.navigate(route = AuthNav.AUTH_ROUTE) {
+                        popUpToInclusive(MainNav.MAIN_HOME_SCREEN)
+                    }
                 }
-            })
+            )
         }
 
     }

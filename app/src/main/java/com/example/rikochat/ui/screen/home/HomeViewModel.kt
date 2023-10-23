@@ -88,7 +88,11 @@ class HomeViewModel(
 
     fun connectToWebSocket() {
 
-        if (webSocketManager.isWebSocketConnected()) return
+        Log.d("riko", "connectToWebSocket")
+        if (webSocketManager.isWebSocketConnected()) {
+            Log.d("riko", "webSocket connected")
+            return
+        }
 
         viewModelScope.launch(Dispatchers.IO) {
 
@@ -100,6 +104,7 @@ class HomeViewModel(
                 }
 
                 is DataState.Success -> {
+                    Log.d("riko", "connectToWebSocket Success")
                     webSocketManager.observeIncoming()
                 }
             }

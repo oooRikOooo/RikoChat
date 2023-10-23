@@ -1,5 +1,6 @@
 package com.example.rikochat.ui.screen.login
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -66,8 +67,9 @@ fun LoginScreen(
         LoginUiState.Idle -> {}
         LoginUiState.SuccessLogin -> {
             LaunchedEffect(key1 = Unit, block = {
-                navigateToMainScreen()
-                viewModel.onEvent(LoginUiEvent.LoginScreenIsClosed)
+//                navigateToMainScreen()
+                Log.d("riko", "navigateToMainScreen()")
+//                viewModel.onEvent(LoginUiEvent.LoginScreenIsClosed)
             })
         }
 

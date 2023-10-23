@@ -1,17 +1,25 @@
 package com.example.rikochat.ui.screen.chat
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -20,6 +28,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Error
@@ -40,6 +50,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -48,17 +59,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Alignment.Companion.Bottom
-import androidx.compose.ui.Alignment.Companion.CenterVertically
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -217,6 +229,7 @@ fun EmptyChatContent(
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalComposeUiApi::class)
 @Composable
 private fun ChatSuccessLoadContent(
     chatRoom: ChatRoom,
@@ -232,6 +245,8 @@ private fun ChatSuccessLoadContent(
     val configuration = LocalConfiguration.current
 
     val screenWidth = remember(configuration) { configuration.screenWidthDp.dp }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.secondary,
@@ -259,11 +274,11 @@ private fun ChatSuccessLoadContent(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(MaterialTheme.colorScheme.secondary)
-                .padding(16.dp)
         ) {
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
+                    .padding(horizontal = 16.dp)
                     .fillMaxWidth(),
                 reverseLayout = true
             ) {
@@ -344,25 +359,54 @@ private fun ChatSuccessLoadContent(
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.secondaryContainer)
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 TextField(
                     value = messageText,
                     onValueChange = { onMessageChange(it) },
                     placeholder = { Text(text = "Enter message") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedTextColor = MaterialTheme.colorScheme.primary,
+                        unfocusedTextColor = MaterialTheme.colorScheme.primary
+                    ),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            sendMessage()
+                            keyboardController?.hide()
+                        }
+                    )
                 )
 
-                IconButton(onClick = { sendMessage() }) {
+                IconButton(
+                    onClick = {
+                        sendMessage()
+                        keyboardController?.hide()
+                    }
+                ) {
                     Icon(
-                        imageVector = Icons.Default.Send, contentDescription = "Send message"
+                        imageVector = Icons.Default.Send,
+                        contentDescription = "Send message",
+                        tint = MaterialTheme.colorScheme.primary
                     )
                 }
             }
+
         }
 
     }
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 private fun MessageItem(
     message: Message,
@@ -407,85 +451,138 @@ private fun MessageItem(
     }
 
 
-    val messageWidth = remember { screenWidth - 100.dp }
+    val messageClickAreaWidth = remember { screenWidth - 100.dp }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
                 viewModel.onEvent(ChatUiEvent.ShowMessageActionsDialog(message))
-            },
+            }
+            .animateContentSize(),
         contentAlignment = if (isOwnMessage) Alignment.CenterEnd else Alignment.CenterStart
     ) {
-        Column(
-            modifier = Modifier
-                .widthIn(75.dp, messageWidth)
-                .background(
-                    color = MaterialTheme.colorScheme.secondaryContainer,
-                    shape = RoundedCornerShape(
-                        topStart = topStartPaddingMessage,
-                        bottomStart = bottomStartPaddingMessage,
-                        topEnd = topEndPaddingMessage,
-                        bottomEnd = bottomEndPaddingMessage
-                    )
-                )
-                .padding(vertical = 8.dp, horizontal = 16.dp)
-        ) {
-
-            if ((!isOwnPrevMessage || isTimeDifferenceMore5Min) && !isOwnMessage) {
-                Text(
-                    text = message.username,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+        AnimatedContent(
+            targetState = message.usernamesWhoLiked.isNotEmpty(),
+            label = "",
+            transitionSpec = {
+                scaleIn(initialScale = 0.9f, animationSpec = tween(300))
+                    .togetherWith(scaleOut(targetScale = 1f, animationSpec = tween(300)))
             }
-
-            Text(
-                text = message.text,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                lineHeight = 20.sp
-            )
-
-
-            Row(
-                modifier = Modifier.align(Alignment.End),
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = CenterVertically
+        ) { targetState ->
+            Column(
+                modifier = Modifier
+                    .width(IntrinsicSize.Max)
+                    .background(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(
+                            topStart = topStartPaddingMessage,
+                            bottomStart = bottomStartPaddingMessage,
+                            topEnd = topEndPaddingMessage,
+                            bottomEnd = bottomEndPaddingMessage
+                        )
+                    )
+                    .padding(8.dp)
+                    .animateContentSize()
             ) {
 
-                AnimatedVisibility(message.usernamesWhoLiked.isNotEmpty()) {
+                val isMessageSmallWithoutAdditionalItems =
+                    remember(targetState) { message.text.length < 35 && !targetState }
 
-                    Row {
-                        Icon(
-                            imageVector = Icons.Filled.ThumbUp,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            contentDescription = null
-                        )
-
-                        Text(
-                            text = message.usernamesWhoLiked.size.toString(),
-                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                        )
-                    }
-
+                if ((!isOwnPrevMessage || isTimeDifferenceMore5Min) && !isOwnMessage) {
+                    Text(
+                        text = message.username,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
                 }
 
-                Text(
-                    modifier = Modifier.align(Bottom),
-                    text = message.formattedTime,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    fontSize = 10.sp,
-                    textAlign = TextAlign.End
-                )
+
+                Row(
+                    modifier = Modifier.widthIn(50.dp, messageClickAreaWidth),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        modifier = Modifier.padding(end = if (isMessageSmallWithoutAdditionalItems) 8.dp else 0.dp),
+                        text = message.text,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        lineHeight = 20.sp
+                    )
+
+                    if (isMessageSmallWithoutAdditionalItems) {
+                        Text(
+                            modifier = Modifier.padding(top = 10.dp),
+                            text = message.formattedTime,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            fontSize = 10.sp,
+                            textAlign = TextAlign.End
+                        )
+                    }
+                }
+
+
+                if (!isMessageSmallWithoutAdditionalItems) {
+                    MessageBottomContainer(
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .padding(top = 5.dp)
+                            .fillMaxWidth(),
+                        message = message
+                    )
+                }
 
             }
-
 
         }
 
         if (viewModel.clickedMessage != null && message.id == viewModel.clickedMessage!!.id) {
             MessageActions(viewModel = viewModel)
         }
+    }
+
+}
+
+@Composable
+fun MessageBottomContainer(
+    modifier: Modifier = Modifier,
+    message: Message
+) {
+
+    val isDateOnlyInfo = remember(message) { message.usernamesWhoLiked.isEmpty() }
+
+    Row(
+        modifier = modifier,
+        horizontalArrangement = if (isDateOnlyInfo) Arrangement.End else Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        if (message.usernamesWhoLiked.isNotEmpty()) {
+            Row(modifier = Modifier.padding(end = 16.dp)) {
+                Icon(
+                    modifier = Modifier.size(24.dp),
+                    imageVector = Icons.Filled.ThumbUp,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    contentDescription = null
+                )
+
+                Text(
+                    text = message.usernamesWhoLiked.size.toString(),
+                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+
+        }
+
+        Text(
+            modifier = Modifier.align(Alignment.Bottom),
+            text = message.formattedTime,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            fontSize = 10.sp,
+            textAlign = TextAlign.End
+        )
+
+
     }
 
 }
@@ -515,6 +612,15 @@ fun MessageActions(
                 )
             )
             viewModel.clickedMessage = null
+        },
+        deleteAction = {
+            viewModel.onEvent(
+                ChatUiEvent.DeleteMessage(
+                    viewModel.clickedMessage!!.id
+                )
+            )
+
+            viewModel.clickedMessage = null
         }
     )
 
@@ -526,7 +632,7 @@ fun MessageActions(
             DropdownMenuItem(
                 text = {
                     Row(
-                        verticalAlignment = CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(20.dp)
                     ) {
                         Icon(imageVector = it.icon, contentDescription = null)
@@ -538,15 +644,6 @@ fun MessageActions(
         }
     }
 
-//    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-//        LazyColumn(content = {
-//            items(items = actionList) {
-//                Row(modifier = Modifier.clickable { it.onClick() }) {
-//                    Icon(imageVector = it.icon, contentDescription = null)
-//                }
-//            }
-//        })
-//    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -639,7 +736,7 @@ fun GroupChatTopBar(title: String, membersCount: Int, addUserToChatRoom: () -> U
                         .padding(horizontal = 10.dp)
                         .fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(20.dp),
-                    verticalAlignment = CenterVertically,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     AsyncImage(
                         model = "",

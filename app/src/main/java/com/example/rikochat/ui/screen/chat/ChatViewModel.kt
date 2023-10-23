@@ -105,6 +105,10 @@ class ChatViewModel(
             is ChatUiEvent.ShowMessageActionsDialog -> {
                 clickedMessage = event.message
             }
+
+            is ChatUiEvent.DeleteMessage -> {
+                deleteMessage(event.messageId)
+            }
         }
     }
 
@@ -190,6 +194,14 @@ class ChatViewModel(
         }
     }
 
+    private fun deleteMessage(messageId: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            webSocketManager.sendDeleteMessage(
+                messageId = messageId
+            )
+        }
+    }
+
     private fun CoroutineScope.getChatRoomInfo(roomId: String) = async {
         val currentUserResult = getCurrentUserUseCase.invoke()
         val messagesResult = roomService.getAllChatRoomMessages(roomId)
@@ -198,19 +210,19 @@ class ChatViewModel(
 
         viewModelState.update { currentState ->
             currentState.copy(
-                currentUser = when(currentUserResult){
+                currentUser = when (currentUserResult) {
                     is DataState.Error -> currentState.currentUser
                     is DataState.Success -> currentUserResult.data
                 },
-                messages = when(messagesResult){
+                messages = when (messagesResult) {
                     is DataState.Error -> currentState.messages
                     is DataState.Success -> messagesResult.data
                 },
-                chatRoom = when(chatRoomInfoResult) {
+                chatRoom = when (chatRoomInfoResult) {
                     is DataState.Error -> currentState.chatRoom
                     is DataState.Success -> chatRoomInfoResult.data
                 },
-                chatRoomMembers = when(chatRoomMembersResult){
+                chatRoomMembers = when (chatRoomMembersResult) {
                     is DataState.Error -> currentState.chatRoomMembers
                     is DataState.Success -> chatRoomMembersResult.data
                 },
@@ -228,61 +240,8 @@ class ChatViewModel(
         observeMessages(roomId)
         observeChatRoomMembers()
         observeUpdateMessage(roomId)
+        observeDeletedMessage()
     }
-
-//    private fun CoroutineScope.getAllRoomMessagesAsync(roomId: String) = async {
-//
-//        when (val result = roomService.getAllChatRoomMessages(roomId)) {
-//            is DataState.Error -> {
-//                viewModelState.update {
-//                    it.copy(error = result.message)
-//                }
-//            }
-//
-//            is DataState.Success -> {
-//                viewModelState.update {
-//                    it.copy(messages = result.data)
-//                }
-//            }
-//        }
-//        Log.d("riko", "getAllRoomMessagesAsync")
-//        observeMessages(roomId)
-//        observeChatRoomMembers()
-//        observeUpdateMessage(roomId)
-////        observeRoomDetailsChanges(roomId)
-//    }
-
-//    private fun CoroutineScope.getChatRoomInfoAsync(roomId: String) = async {
-//        when (val result = getChatRoomUseCase.invoke(roomId)) {
-//            is DataState.Error -> {
-//                viewModelState.update {
-//                    it.copy(error = result.message)
-//                }
-//            }
-//
-//            is DataState.Success -> {
-//                viewModelState.update {
-//                    it.copy(chatRoom = result.data)
-//                }
-//            }
-//        }
-//    }
-
-//    private fun CoroutineScope.getChatRoomMembersAsync(roomId: String) = async {
-//        when (val result = getChatRoomMembersUseCase.invoke(roomId)) {
-//            is DataState.Error -> {
-//                viewModelState.update {
-//                    it.copy(error = result.message)
-//                }
-//            }
-//
-//            is DataState.Success -> {
-//                viewModelState.update {
-//                    it.copy(chatRoomMembers = result.data)
-//                }
-//            }
-//        }
-//    }
 
     private fun observeMessages(roomId: String) {
         webSocketManager.newMessageFlow.onEach { message ->
@@ -319,6 +278,23 @@ class ChatViewModel(
                     it.copy(messages = newList, error = null)
                 }
 
+            }
+        }.launchIn(viewModelScope)
+    }
+
+    private fun observeDeletedMessage() {
+        webSocketManager.deleteMessageFlow.onEach { messageId ->
+            val newList = viewModelState.value.messages?.toMutableList()
+
+            newList?.let { list ->
+                val index = list.indexOfFirst { it.id == messageId }
+
+                if (index != -1) {
+                    list.removeAt(index)
+                    viewModelState.update {
+                        it.copy(messages = newList)
+                    }
+                }
             }
         }.launchIn(viewModelScope)
     }

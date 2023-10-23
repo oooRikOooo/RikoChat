@@ -1,11 +1,11 @@
 package com.example.rikochat.ui.screen.login
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.rikochat.data.remote.api.NO_USER_FOUND
 import com.example.rikochat.domain.usecase.getUser.GetUserUseCase
 import com.example.rikochat.domain.usecase.loginUser.LoginUserUseCase
 import com.example.rikochat.utils.DataState
@@ -35,8 +35,10 @@ class LoginViewModel(
         private set
 
     fun onEvent(event: LoginUiEvent) {
+        Log.d("riko", "event: $event")
         when (event) {
             LoginUiEvent.Login -> {
+                Log.d("riko", "LOGIN")
                 login()
             }
 

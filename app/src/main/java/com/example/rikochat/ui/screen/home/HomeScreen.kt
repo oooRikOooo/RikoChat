@@ -45,6 +45,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -57,11 +58,14 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.example.rikochat.R
@@ -81,33 +85,38 @@ fun HomeScreen(
         viewModel.onEvent(HomeUiEvent.LoadInitialData)
     })
 
-//    val lifecycleOwner = LocalLifecycleOwner.current
-//    DisposableEffect(key1 = lifecycleOwner, effect = {
-//        val observer = LifecycleEventObserver { _, event ->
-//            when (event) {
-//                Lifecycle.Event.ON_CREATE -> {
-//                    Log.d("riko", "On Create")
-//                    viewModel.connectToWebSocket()
-//                }
-//
-//                Lifecycle.Event.ON_PAUSE -> {}
-//                Lifecycle.Event.ON_DESTROY -> {
-//                    Log.d("riko", "On Destroy")
-//                    viewModel.disconnect()
-//                }
-//
-//                else -> {
-//                    Log.d("riko", event.name)
-//                }
-//            }
-//        }
-//
-//        lifecycleOwner.lifecycle.addObserver(observer)
-//
-//        onDispose {
-//            lifecycleOwner.lifecycle.removeObserver(observer)
-//        }
-//    })
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    DisposableEffect(key1 = lifecycleOwner, effect = {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_CREATE -> {
+                    Log.d("riko", "On Create")
+                    viewModel.connectToWebSocket()
+                }
+
+                Lifecycle.Event.ON_PAUSE -> {
+                    Log.d("riko", "On Pause")
+                }
+
+                Lifecycle.Event.ON_DESTROY -> {
+                    Log.d("riko", "On Destroy")
+                    viewModel.disconnect()
+                }
+
+                else -> {
+                    Log.d("riko", event.name)
+                }
+            }
+        }
+
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            Log.d("riko", "onDispose")
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    })
 
     val uiState = viewModel.uiState.collectAsStateWithLifecycle()
 

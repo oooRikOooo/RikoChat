@@ -58,14 +58,4 @@ class MainActivity : ComponentActivity() {
 
         }
     }
-
-    override fun onResume() {
-        super.onResume()
-        viewModel.openConnection()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        viewModel.closeConnection()
-    }
 }

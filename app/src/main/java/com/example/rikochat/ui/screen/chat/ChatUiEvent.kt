@@ -12,6 +12,8 @@ sealed class ChatUiEvent {
 
     data class LikeMessage(val messageId: String) : ChatUiEvent()
 
+    data class DeleteMessage(val messageId: String) : ChatUiEvent()
+
     data class LoadRoomInfo(val roomId: String) : ChatUiEvent()
 
     data class AddUserToGroupChat(val roomId: String) : ChatUiEvent()

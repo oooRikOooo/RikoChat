@@ -50,6 +50,9 @@ class WebSocketManager(
     private val _updateChatRoomMembersFlow = MutableSharedFlow<List<User>>()
     val updateChatRoomMembersFlow: Flow<List<User>> = _updateChatRoomMembersFlow.asSharedFlow()
 
+    private val _deleteMessageFlow = MutableSharedFlow<String>()
+    val deleteMessageFlow = _deleteMessageFlow.asSharedFlow()
+
 
     suspend fun initSession(): DataState<Unit> {
         return try {
@@ -83,41 +86,53 @@ class WebSocketManager(
     }
 
     suspend fun observeIncoming() {
-        socket?.incoming?.receiveAsFlow()?.map {
-            val mappedJson = (it as? Frame.Text)?.readText() ?: ""
+        try {
+            socket?.incoming?.receiveAsFlow()?.map {
+                Log.d("riko", "observeIncoming")
+                val mappedJson = (it as? Frame.Text)?.readText() ?: ""
 
-            Log.d("riko", "mappedJson $mappedJson")
+                Log.d("riko", "mappedJson $mappedJson")
 
-            val parts = mappedJson.split(":", limit = 2)
+                val parts = mappedJson.split(":", limit = 2)
 
-            Log.d("riko", "parts $parts")
+                Log.d("riko", "parts $parts")
 
-            when (parts[0]) {
-                ChatSocketAction.SendMessage.name -> {
-                    val messageDto = Json.decodeFromString<MessageDto>(parts[1])
-                    val message = messageMapper.mapFromEntity(messageDto)
-                    _newMessageFlow.emit(message)
+                when (parts[0]) {
+                    ChatSocketAction.SendMessage.name -> {
+                        val messageDto = Json.decodeFromString<MessageDto>(parts[1])
+                        val message = messageMapper.mapFromEntity(messageDto)
+                        _newMessageFlow.emit(message)
+                    }
+
+                    ChatSocketAction.UpdateMessage.name -> {
+                        val messageDto = Json.decodeFromString<MessageDto>(parts[1])
+                        val message = messageMapper.mapFromEntity(messageDto)
+                        _updateMessageFlow.emit(message)
+                    }
+
+                    ChatSocketAction.UserAdded.name -> {
+                        val usersDto = Json.decodeFromString<List<UserDto>>(parts[1])
+                        val users = userMapper.mapFromEntityList(usersDto)
+                        _updateChatRoomMembersFlow.emit(users)
+                    }
+
+                    ChatSocketAction.UserRemoved.name -> {
+                        val usersDto = Json.decodeFromString<List<UserDto>>(parts[1])
+                        val users = userMapper.mapFromEntityList(usersDto)
+                        _updateChatRoomMembersFlow.emit(users)
+                    }
+
+                    ChatSocketAction.DeleteMessage.name -> {
+                        _deleteMessageFlow.emit(parts[1])
+                    }
                 }
-
-                ChatSocketAction.UpdateMessage.name -> {
-                    val messageDto = Json.decodeFromString<MessageDto>(parts[1])
-                    val message = messageMapper.mapFromEntity(messageDto)
-                    _updateMessageFlow.emit(message)
-                }
-
-                ChatSocketAction.UserAdded.name -> {
-                    val usersDto = Json.decodeFromString<List<UserDto>>(parts[1])
-                    val users = userMapper.mapFromEntityList(usersDto)
-                    _updateChatRoomMembersFlow.emit(users)
-                }
-
-                ChatSocketAction.UserRemoved.name -> {
-                    val usersDto = Json.decodeFromString<List<UserDto>>(parts[1])
-                    val users = userMapper.mapFromEntityList(usersDto)
-                    _updateChatRoomMembersFlow.emit(users)
-                }
+            }?.collect() ?: run {
+                Log.d("riko", "null")
             }
-        }?.collect()
+
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
     }
 
     suspend fun sendMessage(message: MessageDto) {
@@ -134,33 +149,6 @@ class WebSocketManager(
         }
     }
 
-//    override fun observeMessages(): Flow<Message> {
-//        return try {
-//            socket?.incoming
-//                ?.receiveAsFlow()
-//                ?.filter {
-//                    if (it is Frame.Text) {
-//                        val message = it.readText()
-//
-//                        val parts = message.split(":", limit = 2)
-//                        Log.d("riko", "parts[0]: ${parts[0]}")
-//                        if (parts[0] != ChatSocketAction.MessageSent.name) return@filter false
-//
-//                        return@filter true
-//
-//                    } else return@filter false
-//                }?.map {
-//                    val mappedJson = (it as? Frame.Text)?.readText() ?: ""
-//                    val parts = mappedJson.split(":", limit = 2)
-//                    val messageDto = Json.decodeFromString<MessageDto>(parts[1])
-//                    messageMapper.mapFromEntity(messageDto)
-//                } ?: flow {}
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//            flow {}
-//        }
-//    }
-
     suspend fun sendUpdateMessageLike(
         messageId: String,
         whoLikedUsername: String
@@ -174,32 +162,18 @@ class WebSocketManager(
         }
     }
 
-//    override fun observeUpdateMessageLike(): Flow<Message> {
-//        return try {
-//            socket?.incoming
-//                ?.receiveAsFlow()
-//                ?.filter {
-//                    if (it is Frame.Text) {
-//                        val message = it.readText()
-//
-//                        val parts = message.split(":", limit = 2)
-//
-//                        if (parts[0] != ChatSocketAction.UpdateMessageLike.name) return@filter false
-//
-//                        return@filter true
-//
-//                    } else return@filter false
-//                }?.map {
-//                    val mappedJson = (it as? Frame.Text)?.readText() ?: ""
-//                    val parts = mappedJson.split(":", limit = 2)
-//                    val messageDto = Json.decodeFromString<MessageDto>(parts[1])
-//                    messageMapper.mapFromEntity(messageDto)
-//                } ?: flow {}
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//            flow {}
-//        }
-//    }
+    suspend fun sendDeleteMessage(
+        messageId: String
+    ) {
+        try {
+            val sendMessage =
+                "${ChatSocketAction.DeleteMessage.name}:$messageId"
+
+            socket?.send(Frame.Text(sendMessage))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
     suspend fun updateMessageRead(
         messageId: String,
@@ -239,6 +213,7 @@ class WebSocketManager(
 //    }
 
     suspend fun closeSession() {
+        Log.d("riko", "closeSession")
         socket?.close()
         socket = null
     }

@@ -3,6 +3,7 @@ package com.example.rikochat.ui.screen.chat
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Reply
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -33,12 +34,19 @@ sealed class MessageAction(
         override val icon: ImageVector = Icons.Filled.ThumbUp
     ) : MessageAction(onClick, text, icon)
 
+    data class Delete(
+        override val onClick: () -> Unit,
+        override val text: Int = R.string.delete,
+        override val icon: ImageVector = Icons.Filled.Delete
+    ) : MessageAction(onClick, text, icon)
+
     companion object {
 
         fun getListOfActions(
             replyAction: (() -> Unit)? = null,
             copyAction: (() -> Unit)? = null,
-            likeAction: (() -> Unit)? = null
+            likeAction: (() -> Unit)? = null,
+            deleteAction: (() -> Unit)? = null
         ): List<MessageAction> {
             val actionList = mutableListOf<MessageAction>()
 
@@ -52,6 +60,10 @@ sealed class MessageAction(
 
             likeAction?.let {
                 actionList.add(Like(it))
+            }
+
+            deleteAction?.let {
+                actionList.add(Delete(it))
             }
 
             return actionList
