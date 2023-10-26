@@ -1,5 +1,6 @@
 package com.example.rikochat.ui.screen.userDetails
 
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -175,14 +176,13 @@ private fun Preview() {
 
         }
     ) { paddingValues ->
-        BoxWithConstraints {
+        BoxWithConstraints(modifier = Modifier.padding(paddingValues)) {
             val screenHeight = maxHeight
 
             Column(
                 modifier = Modifier
                     .background(MaterialTheme.colorScheme.secondary)
                     .fillMaxSize()
-                    .padding(paddingValues)
                     .verticalScroll(state = scrollState)
             ) {
                 Row(
@@ -213,7 +213,6 @@ private fun Preview() {
 
                 }
 
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -221,7 +220,6 @@ private fun Preview() {
                 ) {
                     Box(
                         modifier = Modifier
-                            .weight(1f)
                             .fillMaxWidth()
                             .background(MaterialTheme.colorScheme.primary),
                         contentAlignment = Alignment.BottomStart
@@ -266,6 +264,7 @@ private fun Preview() {
 
                     HorizontalPager(
                         state = pagerState, modifier = Modifier
+                            .fillMaxSize()
                             .nestedScroll(
                                 remember {
                                     object : NestedScrollConnection {
@@ -273,6 +272,7 @@ private fun Preview() {
                                             available: Offset,
                                             source: NestedScrollSource
                                         ): Offset {
+                                            Log.d("riko", "available.y: ${available.y}")
                                             return if (available.y > 0) Offset.Zero else Offset(
                                                 x = 0f,
                                                 y = -scrollState.dispatchRawDelta(-available.y)
